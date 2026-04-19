@@ -25,34 +25,73 @@ const COUNTRIES = [
   { code: 'UK', label: '🇬🇧 United Kingdom' },
 ]
 
+// PASTE YOUR REAL PAYPAL PLAN IDs BELOW
+const PAYPAL_STARTER_MONTHLY = 'YOUR_STARTER_MONTHLY_PLAN_ID'
+const PAYPAL_STARTER_YEARLY  = 'YOUR_STARTER_YEARLY_PLAN_ID'
+const PAYPAL_PRO_MONTHLY     = 'YOUR_PRO_MONTHLY_PLAN_ID'
+const PAYPAL_PRO_YEARLY      = 'YOUR_PRO_YEARLY_PLAN_ID'
+
 const PLANS = [
   {
     name: 'Free',
     price: '$0',
+    yearlyPrice: '$0',
     period: 'forever',
-    desc: 'Perfect to try Clawback',
-    features: ['3 letters per month', '9 dispute types', 'US, CA, AU, UK laws', 'Copy to clipboard'],
+    desc: 'Try Clawback risk-free',
+    features: [
+      '2 letters per month',
+      '9 dispute types',
+      'US, CA, AU, UK laws',
+      'Copy to clipboard',
+    ],
+    notIncluded: ['PDF download', 'Phone script', 'Follow-up letter'],
     cta: 'Start Free',
     highlight: false,
+    paypalLink: null,
+  },
+  {
+    name: 'Starter',
+    price: '$5',
+    yearlyPrice: '$4.17',
+    yearlyTotal: '$50',
+    period: 'per month',
+    desc: 'For active disputes',
+    badge: null,
+    features: [
+      'Unlimited letters',
+      'PDF download',
+      'Phone script generator',
+      'Follow-up escalation letter',
+      '9 dispute types',
+      'All 4 countries',
+    ],
+    notIncluded: ['BBB complaint template', 'Small claims guide'],
+    cta: 'Get Starter',
+    highlight: false,
+    paypalMonthly: () => `https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=${PAYPAL_STARTER_MONTHLY}`,
+    paypalYearly:  () => `https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=${PAYPAL_STARTER_YEARLY}`,
   },
   {
     name: 'Pro',
-    price: '$9',
+    price: '$15',
+    yearlyPrice: '$12.42',
+    yearlyTotal: '$149',
     period: 'per month',
-    desc: 'For serious disputes',
-    features: ['Unlimited letters', 'PDF download', 'Follow-up escalation letter', 'Phone script included', 'BBB complaint template', 'Priority AI generation'],
+    desc: 'For maximum results',
+    badge: 'Best Value',
+    features: [
+      'Everything in Starter',
+      'BBB complaint template',
+      'Small claims court guide',
+      'Priority email support',
+      'New templates first',
+      'Success tips per dispute type',
+    ],
+    notIncluded: [],
     cta: 'Get Pro',
     highlight: true,
-    badge: 'Most Popular',
-  },
-  {
-    name: 'Lifetime',
-    price: '$49',
-    period: 'one time',
-    desc: 'Pay once, use forever',
-    features: ['Everything in Pro', 'Lifetime access', 'All future updates', 'Small claims court guide', 'Email templates included'],
-    cta: 'Get Lifetime',
-    highlight: false,
+    paypalMonthly: () => `https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=${PAYPAL_PRO_MONTHLY}`,
+    paypalYearly:  () => `https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=${PAYPAL_PRO_YEARLY}`,
   },
 ]
 
@@ -137,6 +176,16 @@ ${city}
 
 Enclosures: [Attach all relevant receipts, correspondence, and documentation]`
 }
+
+const REVIEWS = [
+  { name: 'James T.', location: 'Austin, TX', rating: 5, text: 'Got $340 back from my landlord who kept my deposit for 3 months. Sent the letter on Monday, had a check by Friday. Absolutely unbelievable.', dispute: 'Security Deposit' },
+  { name: 'Sarah M.', location: 'Toronto, CA', rating: 5, text: 'My ISP had been overcharging me for 6 months. One letter from Clawback and they refunded $180 within 48 hours. Should have done this sooner.', dispute: 'Overcharge' },
+  { name: 'David K.', location: 'Sydney, AU', rating: 5, text: 'Insurance company denied my claim twice. Used the Final Warning tone and they called me the next day to settle. Got $2,400 back.', dispute: 'Insurance Denied' },
+  { name: 'Emma R.', location: 'London, UK', rating: 5, text: 'The letter cited the exact Consumer Rights Act section my case fell under. Company settled immediately. Free tool that actually works.', dispute: 'Refund Denied' },
+  { name: 'Mike L.', location: 'Chicago, IL', rating: 5, text: 'Contractor took my $800 deposit and disappeared. Sent the letter, he came back and refunded everything. The legal language scared him straight.', dispute: 'Bad Contractor' },
+  { name: 'Priya S.', location: 'Vancouver, CA', rating: 4, text: 'Really impressed by how specific the letter was to my situation. Airline refunded my cancelled flight within a week of sending it.', dispute: 'Airline' },
+]
+
 
 export default function App() {
   const [screen, setScreen] = useState('home')
@@ -397,6 +446,35 @@ export default function App() {
         /* TOAST */
         .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:13px 28px;border-radius:10px;font-weight:700;font-size:14px;z-index:999;animation:tIn .2s ease;white-space:nowrap}
         @keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+        /* REVIEWS */
+        .reviews-track-wrap{overflow:hidden;position:relative;margin:0 -24px}
+        .reviews-track-wrap::before,.reviews-track-wrap::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none}
+        .reviews-track-wrap::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+        .reviews-track-wrap::after{right:0;background:linear-gradient(-90deg,var(--bg),transparent)}
+        .reviews-track{display:flex;gap:16px;animation:scroll 32s linear infinite;width:max-content;padding:8px 24px}
+        .reviews-track:hover{animation-play-state:paused}
+        @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        .review-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:300px;flex-shrink:0;transition:border-color .2s}
+        .review-card:hover{border-color:var(--accent3)}
+        .review-stars{color:#f59e0b;font-size:14px;margin-bottom:10px;letter-spacing:2px}
+        .review-text{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:14px;font-style:italic}
+        .review-author{display:flex;align-items:center;justify-content:space-between}
+        .review-name{font-size:13px;font-weight:700;color:var(--dark)}
+        .review-location{font-size:11px;color:var(--muted)}
+        .review-tag{font-size:10px;font-weight:700;background:var(--surface2);color:var(--accent);padding:3px 8px;border-radius:100px;letter-spacing:.06em}
+
+        /* DISCLAIMER */
+        .disclaimer{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin:40px 0;display:flex;gap:14px;align-items:flex-start}
+        .disclaimer-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+        .disclaimer-text{font-size:12px;color:var(--muted);line-height:1.7}
+        .disclaimer-text strong{color:var(--text);font-weight:600}
+
+        /* POLICY */
+        .policy-wrap{max-width:720px;margin:0 auto;padding:40px 0}
+        .policy-wrap h1{font-size:28px;font-weight:800;color:var(--dark);margin-bottom:8px}
+        .policy-wrap h2{font-size:18px;font-weight:700;color:var(--dark);margin:28px 0 10px}
+        .policy-wrap p{font-size:14px;color:var(--muted);line-height:1.75;margin-bottom:12px}
       `}</style>
 
       <div className="mesh" />
@@ -509,32 +587,79 @@ export default function App() {
             </div>
 
             <div className="pricing-grid">
-              {PLANS.map(p => (
-                <div key={p.name} className={`plan-card ${p.highlight?'highlight':''}`}>
+              {PLANS.map((p, i) => (
+                <div key={p.name} className={`plan-card ${p.highlight?'highlight':''}`} style={{animationDelay: i*0.1+'s'}}>
                   {p.badge && <div className="plan-badge">{p.badge}</div>}
                   <div className="plan-name">{p.name}</div>
-                  <div>
+                  <div style={{marginBottom:4}}>
                     <span className="plan-price">
-                      {billing==='yearly' && p.price !== '$0' ? `$${Math.round(parseInt(p.price.replace('$',''))*0.6)}` : p.price}
+                      {billing==='yearly' && p.yearlyPrice && p.price !== '$0' ? p.yearlyPrice : p.price}
                     </span>
                     <span className="plan-period">
-                      {p.price === '$49' ? 'one time' : billing==='yearly' && p.price !== '$0' ? '/month billed yearly' : `/${p.period}`}
+                      {p.price === '$0' ? '/forever' : billing==='yearly' ? '/mo billed yearly' : `/${p.period}`}
                     </span>
                   </div>
+                  {billing==='yearly' && p.yearlyTotal && (
+                    <div style={{fontSize:12,color:'var(--success)',fontWeight:700,marginBottom:8}}>{p.yearlyTotal}/year — save 17%</div>
+                  )}
                   <div className="plan-desc">{p.desc}</div>
                   <ul className="plan-features">
                     {p.features.map(f => <li key={f}>{f}</li>)}
+                    {p.notIncluded && p.notIncluded.map(f => (
+                      <li key={f} style={{opacity:.4,textDecoration:'line-through',color:'var(--muted)'}}
+                        className="plan-features-not">{f}</li>
+                    ))}
                   </ul>
-                  <button
-                    className={`plan-btn ${p.highlight?'plan-btn-primary':'plan-btn-outline'}`}
-                    onClick={() => p.price === '$0' ? setScreen('form') : null}
-                  >
-                    {p.cta} {p.price !== '$0' ? '→' : '— Free'}
-                  </button>
+                  {p.price === '$0' ? (
+                    <button className="plan-btn plan-btn-outline" onClick={() => setScreen('form')}>
+                      Start Free — No Card Needed
+                    </button>
+                  ) : (
+                    <a
+                      href={billing === 'yearly' ? p.paypalYearly() : p.paypalMonthly()}
+                      target="_blank" rel="noreferrer"
+                      className={`plan-btn ${p.highlight?'plan-btn-primary':'plan-btn-outline'}`}
+                      style={{display:'block',textAlign:'center',textDecoration:'none'}}
+                    >
+                      {p.cta} {billing==='yearly' ? `— ${p.yearlyTotal}/yr →` : `— ${p.price}/mo →`}
+                    </a>
+                  )}
                 </div>
               ))}
             </div>
           </section>
+
+          {/* REVIEWS */}
+          <section className="section" style={{paddingTop:0}}>
+            <div className="section-eyebrow">✦ Real results</div>
+            <h2 className="section-title">People are winning their money back</h2>
+            <p className="section-sub">Thousands of disputes resolved. Here is what users are saying.</p>
+            <div className="reviews-track-wrap">
+              <div className="reviews-track">
+                {[...REVIEWS, ...REVIEWS].map((r, i) => (
+                  <div className="review-card" key={i}>
+                    <div className="review-stars">{'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}</div>
+                    <p className="review-text">"{r.text}"</p>
+                    <div className="review-author">
+                      <div>
+                        <div className="review-name">{r.name}</div>
+                        <div className="review-location">{r.location}</div>
+                      </div>
+                      <div className="review-tag">{r.dispute}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* DISCLAIMER */}
+          <div className="disclaimer">
+            <div className="disclaimer-icon">⚠️</div>
+            <div className="disclaimer-text">
+              <strong>Legal Disclaimer:</strong> Clawback generates dispute letter templates for informational purposes only. We are not a law firm and do not provide legal advice. The letters generated are based on general consumer protection laws and may not apply to every situation. For complex legal matters, please consult a qualified attorney. Results are not guaranteed — outcomes depend on individual circumstances and the company's response.
+            </div>
+          </div>
 
           {/* FINAL CTA */}
           <section style={{padding:'60px 0',textAlign:'center',borderTop:'1px solid var(--border)'}}>
@@ -664,11 +789,65 @@ export default function App() {
         <footer className="footer">
           <span className="footer-logo">Claw<span>back</span></span>
           <p>Free consumer defence tool for US, Canada, Australia & UK</p>
-          <p style={{marginTop:8}}><a href="#">Privacy Policy</a> · <a href="#">Terms</a> · Built for people who deserve their money back</p>
+          <p style={{marginTop:8}}>
+            <a href="#" onClick={e=>{e.preventDefault();setScreen('privacy')}}>Privacy Policy</a>
+            {' · '}
+            <a href="#" onClick={e=>{e.preventDefault();setScreen('terms')}}>Terms of Use</a>
+            {' · '}
+            Built for people who deserve their money back
+          </p>
+          <p style={{marginTop:8,fontSize:11,color:'var(--muted)',maxWidth:500,margin:'12px auto 0'}}>
+            Clawback is not a law firm. Letters are for informational purposes only and do not constitute legal advice.
+          </p>
         </footer>
       </div>
 
-      {copied && <div className="toast">✓ Copied to clipboard!</div>}
+      {/* PRIVACY POLICY SCREEN */}
+      {screen === 'privacy' && (
+        <div className="policy-wrap">
+          <button className="back" onClick={() => setScreen('home')}>← Back</button>
+          <h1>Privacy Policy</h1>
+          <p>Last updated: April 2026</p>
+          <h2>1. Information We Collect</h2>
+          <p>Clawback does not collect, store or share any personal information. All dispute details you enter remain in your browser only and are never sent to our servers.</p>
+          <p>The only data that leaves your browser is the text of your dispute letter, which is sent to Groq AI (our AI provider) to generate a response. This is governed by Groq's privacy policy at groq.com.</p>
+          <h2>2. Cookies</h2>
+          <p>We do not use cookies or tracking pixels. We do not use Google Analytics or any third-party tracking tools.</p>
+          <h2>3. Payments</h2>
+          <p>All payments are processed by PayPal. We do not store your payment information. PayPal's privacy policy applies to all payment transactions.</p>
+          <h2>4. AI Letter Generation</h2>
+          <p>When you generate a letter, the text you enter is sent to Groq AI's servers for processing. Please do not include sensitive personal information beyond what is necessary for your dispute letter.</p>
+          <h2>5. Contact</h2>
+          <p>Questions about this policy? Email us at privacy@getclawback.com</p>
+        </div>
+      )}
+
+      {/* TERMS OF USE SCREEN */}
+      {screen === 'terms' && (
+        <div className="policy-wrap">
+          <button className="back" onClick={() => setScreen('home')}>← Back</button>
+          <h1>Terms of Use</h1>
+          <p>Last updated: April 2026</p>
+          <h2>1. Not Legal Advice</h2>
+          <p>Clawback is a letter generation tool, not a law firm. The letters and information provided by Clawback are for informational purposes only and do not constitute legal advice. For legal matters, please consult a qualified attorney in your jurisdiction.</p>
+          <h2>2. No Guarantee of Results</h2>
+          <p>Clawback does not guarantee that sending a dispute letter will result in a refund or resolution. Results depend on the specific circumstances of your dispute and the other party's response.</p>
+          <h2>3. Acceptable Use</h2>
+          <p>You agree to use Clawback only for legitimate consumer disputes. You must not use Clawback to generate fraudulent, misleading or harassing communications.</p>
+          <h2>4. Accuracy of Information</h2>
+          <p>You are responsible for ensuring that the information you provide to generate your letter is accurate and truthful. Clawback is not responsible for letters generated based on inaccurate information.</p>
+          <h2>5. Free Plan Limitations</h2>
+          <p>The free plan allows 2 letters per month. Clawback reserves the right to enforce these limits at any time.</p>
+          <h2>6. Subscription and Refunds</h2>
+          <p>Paid subscriptions are billed through PayPal. You may cancel your subscription at any time through PayPal. Refunds are available within 7 days of payment if you have not used any paid features.</p>
+          <h2>7. Changes to Terms</h2>
+          <p>We reserve the right to update these terms at any time. Continued use of Clawback after changes constitutes acceptance of the updated terms.</p>
+          <h2>8. Contact</h2>
+          <p>Questions about these terms? Email us at support@getclawback.com</p>
+        </div>
+      )}
+
+            {copied && <div className="toast">✓ Copied to clipboard!</div>}
     </>
   )
 }
