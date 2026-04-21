@@ -315,6 +315,8 @@ export default function App() {
   const [billing, setBilling] = useState('monthly')
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [letterCount, setLetterCount] = useState(getLetterCount())
+  const [darkMode, setDarkMode] = useState(true)
+  const [testPlan, setTestPlan] = useState('free') // for testing only: 'free' | 'starter' | 'pro'
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
@@ -343,8 +345,8 @@ export default function App() {
 
   function signOut() { setUser(null); setLetterCount(getLetterCount()) }
 
-  const userPlan = user?.plan || 'free'
-  const canGenerate = userPlan !== 'free' || letterCount < FREE_LIMIT
+  const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
+  const canGenerate = TESTING_MODE ? true : (userPlan !== 'free' || letterCount < FREE_LIMIT)
 
   async function generate() {
     if (!disputeType || !form.company || !form.description) return
@@ -409,14 +411,50 @@ export default function App() {
           --surface:rgba(255,255,255,0.05);
           --success:#10b981;
           --card:rgba(255,255,255,0.05);
+          --nav-bg:rgba(10,6,24,0.85);
+          --letter-bg:rgba(255,255,255,0.05);
+          --input-bg:rgba(255,255,255,0.06);
+          --tip-bg:rgba(255,255,255,0.04);
+          --dis-bg:rgba(255,255,255,0.04);
+          --footer-fade:linear-gradient(90deg,#0a0618,transparent);
         }
+        .light-mode{
+          --bg:#f8f7ff;
+          --text:#1a1040;
+          --muted:#6b6895;
+          --border:rgba(108,71,255,0.15);
+          --surface:rgba(255,255,255,0.9);
+          --card:rgba(255,255,255,0.9);
+          --nav-bg:rgba(248,247,255,0.9);
+          --letter-bg:rgba(255,255,255,0.95);
+          --input-bg:rgba(255,255,255,0.9);
+          --tip-bg:rgba(240,238,255,0.8);
+          --dis-bg:rgba(240,238,255,0.6);
+          --footer-fade:linear-gradient(90deg,#f8f7ff,transparent);
+        }
+        .light-mode body,.light-mode .app{color:var(--text)}
+        .light-mode .hero-h1,.light-mode .sec-title,.light-mode .how-card h3,.light-mode .type-label,.light-mode .fcard-head h2,.light-mode .result-title,.light-mode .loading-wrap h2,.light-mode .policy-wrap h1,.light-mode .policy-wrap h2,.light-mode .plan-price,.light-mode .plan-name,.light-mode .review-name{color:#1a1040!important}
+        .light-mode .logo-claw{color:#1a1040!important}
+        .light-mode .nav{background:var(--nav-bg)}
+        .light-mode .how-card,.light-mode .type-card,.light-mode .review-card,.light-mode .plan-card,.light-mode .fcard,.light-mode .stats-bar{background:rgba(255,255,255,0.9);box-shadow:0 2px 20px rgba(108,71,255,.08)}
+        .light-mode .letter-box{background:rgba(255,255,255,.95);color:#1a1040}
+        .light-mode .field input,.light-mode .field textarea,.light-mode .field select{background:rgba(255,255,255,.9);color:#1a1040}
+        .light-mode .tone-btn{background:rgba(255,255,255,.9);color:#1a1040}
+        .light-mode .tone-name{color:#1a1040!important}
+        .light-mode .modal{background:#ffffff}
+        .light-mode .google-btn{background:rgba(0,0,0,.04);color:#1a1040}
+        .light-mode .modal h2,.light-mode .modal p{color:#1a1040}
+        .light-mode .reviews-wrap::before{background:linear-gradient(90deg,#f8f7ff,transparent)!important}
+        .light-mode .reviews-wrap::after{background:linear-gradient(-90deg,#f8f7ff,transparent)!important}
+        .light-mode .review-text,.light-mode .how-card p,.light-mode .type-desc{color:#6b6895}
+        .light-mode .fcard-body{background:#f8f7ff}
         html{scroll-behavior:smooth}
-        body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;line-height:1.6;overflow-x:hidden}
+        body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;line-height:1.6;overflow-x:hidden;transition:background .3s}
         ::selection{background:var(--accent);color:#fff}
         .app{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:0 24px 100px}
 
         /* NAV */
-        .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:rgba(10,6,24,0.85);backdrop-filter:blur(20px)}
+        .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);transition:background .3s}
         .logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
         .logo-text{font-size:22px;font-weight:800;letter-spacing:-0.5px}
         .logo-claw{color:#fff}
@@ -620,13 +658,26 @@ export default function App() {
         .footer a:hover{color:#fff}
 
         /* TOAST */
+        /* THEME TOGGLE */
+        .theme-toggle{position:fixed;bottom:24px;right:24px;z-index:200;background:rgba(108,71,255,.15);border:1px solid rgba(108,71,255,.3);border-radius:100px;padding:8px 16px;cursor:pointer;font-size:12px;font-weight:700;color:var(--accent3);display:flex;align-items:center;gap:6px;backdrop-filter:blur(12px);transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif}
+        .theme-toggle:hover{background:rgba(108,71,255,.25);transform:translateY(-2px)}
+        .light-mode .theme-toggle{background:rgba(255,255,255,.9);border-color:rgba(108,71,255,.2);color:var(--accent)}
+
+        /* TEST PLAN SWITCHER */
+        .test-switcher{position:fixed;bottom:24px;left:24px;z-index:200;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:12px;padding:10px 14px;backdrop-filter:blur(12px);font-family:'Plus Jakarta Sans',sans-serif}
+        .test-switcher-label{font-size:10px;font-weight:700;color:var(--success);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+        .test-switcher-btns{display:flex;gap:6px}
+        .test-plan-btn{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(16,185,129,.25);background:transparent;color:var(--success);font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s}
+        .test-plan-btn.active{background:rgba(16,185,129,.2);border-color:var(--success)}
+        .test-plan-btn:hover{background:rgba(16,185,129,.15)}
+
         .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#13102b;border:1px solid var(--border);color:#fff;padding:13px 28px;border-radius:12px;font-weight:700;font-size:14px;z-index:9999;animation:tIn .2s ease;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.4)}
         @keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
       `}</style>
 
-      <AnimatedBg />
+      {darkMode && <AnimatedBg />}
 
-      <div className="app">
+      <div className={`app ${!darkMode?"light-mode":""}`}>
 
         {/* NAV */}
         <nav className="nav">
@@ -826,6 +877,14 @@ export default function App() {
             <div style={{marginBottom:24,textAlign:'center'}}>
               <h2 style={{fontSize:26,fontWeight:800,color:'#fff',letterSpacing:'-0.5px'}}>Build your dispute letter</h2>
               <p style={{fontSize:14,color:'var(--muted)',marginTop:6}}>Takes about 2 minutes</p>
+              {TESTING_MODE && (
+                <div style={{marginTop:12,background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.25)',borderRadius:10,padding:'10px 16px',fontSize:13,color:'var(--success)'}}>
+                  🧪 Testing as <strong>{testPlan.charAt(0).toUpperCase()+testPlan.slice(1)} plan</strong> — switch plans using the button at bottom-left
+                  {testPlan==='free' && ' · 2 letters/month · Copy only'}
+                  {testPlan==='starter' && ' · Unlimited · PDF · Phone script · Follow-up letter'}
+                  {testPlan==='pro' && ' · Everything · BBB template · Small claims guide · Priority support'}
+                </div>
+              )}
               {!user && (
                 <div style={{marginTop:10,fontSize:12,color:'var(--muted)'}}>
                   {Math.max(0,FREE_LIMIT-letterCount)} free letter{FREE_LIMIT-letterCount===1?'':'s'} remaining ·{' '}
@@ -1016,6 +1075,25 @@ export default function App() {
           <p style={{marginTop:10,fontSize:11,color:'var(--muted)'}}>Clawback is not a law firm. Letters are for informational purposes only.</p>
         </footer>
       </div>
+
+      {/* THEME TOGGLE */}
+      <button className="theme-toggle" onClick={()=>setDarkMode(d=>!d)}>
+        {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+      </button>
+
+      {/* TEST PLAN SWITCHER - remove before launch */}
+      {TESTING_MODE && (
+        <div className="test-switcher">
+          <div className="test-switcher-label">🧪 Test as plan:</div>
+          <div className="test-switcher-btns">
+            {['free','starter','pro'].map(p=>(
+              <button key={p} className={`test-plan-btn ${testPlan===p?'active':''}`} onClick={()=>setTestPlan(p)}>
+                {p.charAt(0).toUpperCase()+p.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* AUTH MODAL */}
       {showAuthModal && (
