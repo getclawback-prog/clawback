@@ -303,6 +303,404 @@ function LogoIcon({ size=36 }) {
 }
 
 // ── App ───────────────────────────────────────────────────────────────
+// ── BBB Templates per dispute type ───────────────────────────────────
+const BBB_TEMPLATES = {
+  overcharge: (form) => `BBB COMPLAINT FORM - BILLING DISPUTE
+
+Company Name: ${form.company}
+Category: Billing/Collections
+Date of Transaction: [DATE OF CHARGE]
+Amount: $${form.amount||'[AMOUNT]'}
+
+COMPLAINT DETAILS:
+${form.description}
+
+DESIRED RESOLUTION:
+${form.desired || 'Full refund of the disputed amount'}
+
+I have attempted to resolve this directly with ${form.company} without success. I am requesting BBB's assistance in reaching a fair resolution.`,
+
+  refund: (form) => `BBB COMPLAINT FORM - REFUND DISPUTE
+
+Company Name: ${form.company}
+Category: Refund/Exchange Issues
+Amount: $${form.amount||'[AMOUNT]'}
+
+COMPLAINT DETAILS:
+${form.description}
+
+DESIRED RESOLUTION:
+${form.desired || 'Full refund processed within 14 days'}
+
+${form.company} has refused to honor their refund policy. I am requesting BBB intervention.`,
+
+  deposit: (form) => `BBB COMPLAINT FORM - SECURITY DEPOSIT
+
+Company Name: ${form.company}
+Category: Rental/Lease Issues
+Amount: $${form.amount||'[AMOUNT]'}
+
+COMPLAINT DETAILS:
+${form.description}
+
+DESIRED RESOLUTION:
+${form.desired || 'Return of full security deposit'}`,
+
+  other: (form) => `BBB COMPLAINT FORM
+
+Company Name: ${form.company}
+Amount in Dispute: $${form.amount||'[AMOUNT]'}
+
+COMPLAINT DETAILS:
+${form.description}
+
+DESIRED RESOLUTION:
+${form.desired || 'Fair resolution of the dispute'}`,
+}
+
+const SMALL_CLAIMS = {
+  US: `SMALL CLAIMS COURT GUIDE (United States)
+
+STEP 1 — CHECK YOUR LIMIT
+• Most states: $5,000–$10,000 limit (California up to $12,500)
+• Find your state limit at: uscourts.gov
+
+STEP 2 — FILE THE CLAIM
+• Go to your local courthouse or file online at your county court website
+• Filing fee: usually $30–$100
+• You do NOT need a lawyer
+
+STEP 3 — SERVE THE DEFENDANT
+• Mail a certified copy to the company's registered agent
+• Find registered agent at your Secretary of State website
+
+STEP 4 — PREPARE YOUR EVIDENCE
+• Print all emails, receipts, billing statements
+• Print this dispute letter as evidence you tried to resolve it
+• Bring photos if relevant
+
+STEP 5 — COURT DATE
+• Arrive 15 minutes early
+• State your case calmly and factually
+• Judge usually rules same day
+
+TIPS:
+✓ Companies often settle before court date when they receive the summons
+✓ You can claim filing fees back if you win
+✓ Most cases take 30–60 days from filing to hearing`,
+
+  CA: `SMALL CLAIMS COURT GUIDE (Canada)
+
+STEP 1 — CHECK YOUR LIMIT
+• Ontario: up to $35,000
+• BC: up to $35,000
+• Alberta: up to $50,000
+• Other provinces: $20,000–$35,000
+
+STEP 2 — FILE THE CLAIM
+• Go to your local courthouse
+• Filing fee: $75–$200 depending on amount
+• File in the province where the company operates
+
+STEP 3 — SERVE THE DEFENDANT
+• Must serve personally or by registered mail
+• Keep proof of delivery
+
+STEP 4 — PREPARE YOUR EVIDENCE
+• All written communication, receipts, contracts
+• This dispute letter as evidence of good faith attempt
+
+TIPS:
+✓ Most companies settle after receiving court notice
+✓ Bring 3 copies of all documents to court`,
+
+  AU: `SMALL CLAIMS / TRIBUNAL GUIDE (Australia)
+
+STEP 1 — CHOOSE THE RIGHT FORUM
+• NCAT (NSW): up to $40,000
+• VCAT (Victoria): up to $100,000
+• QCAT (Queensland): up to $25,000
+• Check your state tribunal website
+
+STEP 2 — FILE ONLINE
+• Most tribunals have online filing
+• Fee: $50–$200 depending on claim amount
+
+STEP 3 — MEDIATION FIRST
+• Most tribunals require mediation attempt
+• Keep records of all settlement attempts
+
+TIPS:
+✓ ACCC complaints often resolve issues before tribunal
+✓ No lawyers allowed in most small claims hearings`,
+
+  UK: `SMALL CLAIMS COURT GUIDE (United Kingdom)
+
+STEP 1 — CHECK YOUR LIMIT
+• Small claims track: up to £10,000
+• Fast track: £10,000–£25,000
+
+STEP 2 — FILE ONLINE
+• Go to: moneyclaim.gov.uk
+• Filing fee: £35–£455 based on claim amount
+
+STEP 3 — SEND LETTER BEFORE CLAIM
+• You must send this dispute letter first (pre-action protocol)
+• Give 14 days to respond before filing
+
+STEP 4 — PREPARE EVIDENCE
+• All written communication and receipts
+• Photos, contracts, bank statements
+
+TIPS:
+✓ Many companies pay rather than appear in court
+✓ You can claim court costs back if you win`,
+}
+
+// ── Plan Features Component ───────────────────────────────────────────
+function PlanFeatures({ userPlan, letter, form, disputeType, tips }) {
+  const [activeFeature, setActiveFeature] = useState(null)
+  const [phoneScript, setPhoneScript] = useState('')
+  const [followUp, setFollowUp] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function generateGroqContent(prompt) {
+    setLoading(true)
+    try {
+      const apiKey = import.meta.env.VITE_GROQ_API_KEY
+      if (!apiKey) throw new Error('No key')
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey },
+        body:JSON.stringify({ model:'llama-3.3-70b-versatile', messages:[{role:'user',content:prompt}], max_tokens:600, temperature:0.7 })
+      })
+      const data = await res.json()
+      return data.choices?.[0]?.message?.content || ''
+    } catch(e) { return '' }
+    finally { setLoading(false) }
+  }
+
+  async function handlePhoneScript() {
+    setActiveFeature('phone')
+    if (phoneScript) return
+    const script = await generateGroqContent(
+      `Write a short phone call script for someone disputing with ${form.company||'a company'} about: ${form.description||'an overcharge'}. 
+      They want: ${form.desired||'a full refund'}.
+      Format as: Opening → State the dispute → Reference the letter sent → Make the demand → Handle resistance → Close.
+      Keep it under 300 words. Use [PAUSE] for natural pauses. Make it confident but professional.`
+    )
+    setPhoneScript(script || `Hello, my name is ${form.yourName||'[YOUR NAME]'} and I'm calling regarding a dispute with ${form.company||'your company'}.
+
+I recently sent a formal dispute letter regarding: ${form.description||'an issue with my account'}.
+
+[PAUSE]
+
+I am calling to follow up and confirm you received my letter, and to request an update on the resolution timeline I specified — which was ${form.desired||'a full refund'}.
+
+[PAUSE]
+
+I have documented everything in writing and I expect a response within the timeframe stated in my letter. Can you confirm receipt and give me a reference number for this call?
+
+[PAUSE — note down the reference number]
+
+Thank you. I look forward to your written response.`)
+  }
+
+  async function handleFollowUp() {
+    setActiveFeature('followup')
+    if (followUp) return
+    const script = await generateGroqContent(
+      `Write a follow-up escalation dispute letter for someone who sent a first dispute letter to ${form.company||'a company'} about: ${form.description||'an overcharge'} and got no response.
+      Amount: $${form.amount||'the disputed amount'}. Desired outcome: ${form.desired||'full refund'}.
+      This should be more urgent than the first letter. Reference that the first letter was ignored.
+      Include: RE: FINAL ESCALATION NOTICE, reference to first letter, shorter 7-day deadline, stronger consequences.
+      From: ${form.yourName||'[YOUR NAME]'}, ${form.city||'[CITY]'}, ${form.country||'US'}. Under 300 words.`
+    )
+    setFollowUp(script || `${form.yourName||'[YOUR NAME]'}
+${form.city||'[YOUR CITY]'}
+${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}
+
+${form.company||'[COMPANY]'}
+
+RE: FINAL ESCALATION — NO RESPONSE TO PRIOR DISPUTE LETTER
+
+Dear ${form.company||'[COMPANY]'} Team,
+
+This letter serves as formal notice that you have failed to respond to my dispute letter sent previously regarding: ${form.description||'the described matter'}.
+
+Your failure to respond is unacceptable. I am now reducing my deadline to 7 DAYS from the date of this letter.
+
+If I do not receive a written resolution by this deadline, I will immediately file complaints with all relevant regulatory bodies, initiate a credit card chargeback, and pursue all available legal remedies including Small Claims Court — without further notice.
+
+This is your final opportunity to resolve this matter directly.
+
+Sincerely,
+${form.yourName||'[YOUR NAME]'}`)
+  }
+
+  function handlePDF() {
+    const printWindow = window.open('', '_blank')
+    printWindow.document.write(`
+      <html><head><title>Dispute Letter - Clawback</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.8; padding: 60px; max-width: 700px; margin: 0 auto; color: #1a1a1a; }
+        h2 { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 24px; }
+        pre { white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.8; }
+        .footer { margin-top: 40px; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 12px; }
+        @media print { button { display: none } }
+      </style></head>
+      <body>
+        <h2>Generated by Clawback · getclawback.com</h2>
+        <pre>${letter}</pre>
+        <div class="footer">This letter was generated by Clawback for informational purposes only. Clawback is not a law firm.</div>
+        <br/><button onclick="window.print()" style="padding:12px 24px;background:#6c47ff;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;margin-top:16px">🖨️ Print / Save as PDF</button>
+      </body></html>
+    `)
+    printWindow.document.close()
+    printWindow.focus()
+  }
+
+  function handleBBB() {
+    setActiveFeature('bbb')
+  }
+
+  function handleSmallClaims() {
+    setActiveFeature('smallclaims')
+  }
+
+  const bbbText = (BBB_TEMPLATES[disputeType] || BBB_TEMPLATES.other)(form)
+  const smallClaimsText = SMALL_CLAIMS[form.country] || SMALL_CLAIMS.US
+
+  const btnStyle = (primary) => ({
+    padding:'12px 16px',
+    background: primary ? 'linear-gradient(135deg,#6c47ff,#8b5cf6)' : 'rgba(255,255,255,.06)',
+    border: primary ? 'none' : '1px solid rgba(108,71,255,.2)',
+    borderRadius:10, color: primary ? '#fff' : 'var(--text)',
+    fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+    display:'flex', alignItems:'center', gap:8, transition:'all .15s',
+    width:'100%', textAlign:'left',
+  })
+
+  const contentBox = {
+    marginTop:16, background:'rgba(0,0,0,.15)', border:'1px solid rgba(108,71,255,.2)',
+    borderRadius:10, padding:20, fontSize:13, lineHeight:1.8,
+    whiteSpace:'pre-wrap', color:'var(--text)', maxHeight:400, overflowY:'auto',
+    fontFamily:"'Plus Jakarta Sans',sans-serif",
+  }
+
+  return (
+    <div style={{marginTop:28,background:'rgba(108,71,255,.08)',border:'1px solid rgba(108,71,255,.2)',borderRadius:14,padding:24}}>
+      <div style={{fontSize:13,fontWeight:700,color:'var(--accent3)',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:16}}>
+        ✦ {userPlan==='starter'?'Starter':'Pro'} Plan Features
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+
+        {/* PDF DOWNLOAD */}
+        <button style={btnStyle(true)} onClick={handlePDF}>
+          📄 Download PDF
+        </button>
+
+        {/* PHONE SCRIPT */}
+        <button style={btnStyle(false)} onClick={handlePhoneScript}>
+          📞 Phone Script {activeFeature==='phone'&&!phoneScript&&loading?'...':''}
+        </button>
+
+        {/* FOLLOW-UP LETTER */}
+        <button style={btnStyle(false)} onClick={handleFollowUp}>
+          🔄 Follow-up Letter {activeFeature==='followup'&&!followUp&&loading?'...':''}
+        </button>
+
+        {/* BBB TEMPLATE — Pro only */}
+        {userPlan==='pro' && (
+          <button style={btnStyle(false)} onClick={handleBBB}>
+            ⭐ BBB Complaint Template
+          </button>
+        )}
+
+        {/* SMALL CLAIMS — Pro only */}
+        {userPlan==='pro' && (
+          <button style={btnStyle(false)} onClick={handleSmallClaims}>
+            ⚖️ Small Claims Guide
+          </button>
+        )}
+
+        {/* PRIORITY SUPPORT — Pro only */}
+        {userPlan==='pro' && (
+          <a href="mailto:support@getclawback.gmail.com?subject=Priority Support Request"
+            style={{...btnStyle(false), textDecoration:'none'}}>
+            🎯 Priority Email Support
+          </a>
+        )}
+      </div>
+
+      {/* SUCCESS TIPS — Pro only */}
+      {userPlan==='pro' && (
+        <div style={{marginTop:12,padding:'14px 16px',background:'rgba(16,185,129,.06)',border:'1px solid rgba(16,185,129,.2)',borderRadius:10}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#10b981',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:10}}>
+            ✦ Success Tips for Your Dispute Type
+          </div>
+          {(tips||[]).map((tip,i)=>(
+            <div key={i} style={{fontSize:12,color:'var(--muted)',marginBottom:6,display:'flex',gap:8}}>
+              <span style={{color:'#10b981',fontWeight:700}}>✓</span>{tip}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* NEW TEMPLATES NOTE — Pro only */}
+      {userPlan==='pro' && (
+        <div style={{marginTop:10,fontSize:12,color:'var(--muted)',padding:'10px 14px',background:'rgba(108,71,255,.06)',borderRadius:8,border:'1px solid rgba(108,71,255,.15)'}}>
+          ⚡ <strong style={{color:'var(--accent3)'}}>New Templates First:</strong> As a Pro member you get access to new dispute templates before they launch to free users. Watch your email.
+        </div>
+      )}
+
+      {/* CONTENT DISPLAY AREA */}
+      {activeFeature==='phone' && (
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:'var(--accent3)',margin:'16px 0 6px',letterSpacing:'.06em',textTransform:'uppercase'}}>📞 Your Phone Script</div>
+          {loading && !phoneScript ? <div style={{color:'var(--muted)',fontSize:13,padding:16}}>Generating your script...</div>
+          : <div style={contentBox}>{phoneScript}</div>}
+          {phoneScript && <button style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>{navigator.clipboard.writeText(phoneScript)}}>Copy Script</button>}
+        </div>
+      )}
+
+      {activeFeature==='followup' && (
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:'var(--accent3)',margin:'16px 0 6px',letterSpacing:'.06em',textTransform:'uppercase'}}>🔄 Your Follow-up Escalation Letter</div>
+          {loading && !followUp ? <div style={{color:'var(--muted)',fontSize:13,padding:16}}>Generating follow-up letter...</div>
+          : <div style={contentBox}>{followUp}</div>}
+          {followUp && <button style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>{navigator.clipboard.writeText(followUp)}}>Copy Letter</button>}
+        </div>
+      )}
+
+      {activeFeature==='bbb' && (
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:'var(--accent3)',margin:'16px 0 6px',letterSpacing:'.06em',textTransform:'uppercase'}}>⭐ BBB Complaint Template</div>
+          <div style={contentBox}>{bbbText}</div>
+          <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
+            <button style={{padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>{navigator.clipboard.writeText(bbbText)}}>Copy Template</button>
+            <a href="https://www.bbb.org/file-a-complaint" target="_blank" rel="noreferrer" style={{padding:'8px 16px',background:'transparent',border:'1px solid rgba(108,71,255,.3)',borderRadius:8,color:'var(--accent3)',fontSize:12,fontWeight:700,textDecoration:'none'}}>File at BBB.org →</a>
+          </div>
+        </div>
+      )}
+
+      {activeFeature==='smallclaims' && (
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:'var(--accent3)',margin:'16px 0 6px',letterSpacing:'.06em',textTransform:'uppercase'}}>⚖️ Small Claims Court Guide</div>
+          <div style={contentBox}>{smallClaimsText}</div>
+          <button style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>{navigator.clipboard.writeText(smallClaimsText)}}>Copy Guide</button>
+        </div>
+      )}
+
+      <div style={{fontSize:11,color:'var(--muted)',marginTop:14}}>
+        ✓ PDF opens print dialog · Phone Script + Follow-up generated by AI · BBB template pre-filled with your details
+      </div>
+    </div>
+  )
+}
+
+
 export default function App() {
   const [screen, setScreen] = useState('home')
   const [user, setUser] = useState(null)
@@ -707,8 +1105,10 @@ export default function App() {
       `}</style>
 
       {darkMode && <AnimatedBg />}
+      {/* Full-width background for light mode */}
+      {!darkMode && <div style={{position:'fixed',inset:0,background:'#f0eeff',zIndex:0}}/>}
 
-      <div className={`app ${darkMode?"dark-mode":"light-mode"}`} style={{background:darkMode?"transparent":"#f0eeff",minHeight:"100vh"}}>
+      <div className={`app ${darkMode?"dark-mode":"light-mode"}`} style={{position:'relative',zIndex:1}}>
 
         {/* NAV */}
         <nav className="nav">
@@ -895,7 +1295,7 @@ export default function App() {
 
           {/* FINAL CTA */}
           <section style={{padding:'64px 0',textAlign:'center',borderTop:'1px solid var(--border)'}}>
-            <h2 style={{fontSize:'clamp(26px,4vw,46px)',fontWeight:800,letterSpacing:'-1.5px',color:'#fff',marginBottom:14}}>Ready to fight back?</h2>
+            <h2 style={{fontSize:'clamp(26px,4vw,46px)',fontWeight:800,letterSpacing:'-1.5px',color:'var(--text)',marginBottom:14}}>Ready to fight back?</h2>
             <p style={{fontSize:16,color:'var(--muted)',marginBottom:32,maxWidth:380,margin:'0 auto 32px'}}>Generate your first letter free. No signup required.</p>
             <button className="btn-main" style={{margin:'0 auto'}} onClick={()=>setScreen('form')}>Generate My Letter — Free ⚡</button>
           </section>
@@ -906,7 +1306,7 @@ export default function App() {
           <button className="back" onClick={reset}>← Back to home</button>
           <div className="form-wrap">
             <div style={{marginBottom:24,textAlign:'center'}}>
-              <h2 style={{fontSize:26,fontWeight:800,color:'#fff',letterSpacing:'-0.5px'}}>Build your dispute letter</h2>
+              <h2 style={{fontSize:26,fontWeight:800,color:'var(--text)',letterSpacing:'-0.5px'}}>Build your dispute letter</h2>
               <p style={{fontSize:14,color:'var(--muted)',marginTop:6}}>Takes about 2 minutes</p>
               {TESTING_MODE && (
                 <div style={{marginTop:12,background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.25)',borderRadius:10,padding:'10px 16px',fontSize:13,color:'var(--success)'}}>
@@ -1007,7 +1407,7 @@ export default function App() {
         {screen==='loading' && (
           <div className="loading-wrap">
             <div className="spinner"/>
-            <h2>Writing your dispute letter...</h2>
+            <h2 style={{color:'var(--text)'}}>Writing your dispute letter...</h2>
             <p>AI is drafting a specific letter with real consumer protection laws for your situation.</p>
           </div>
         )}
@@ -1037,40 +1437,7 @@ export default function App() {
           </div>
           {/* PLAN SPECIFIC FEATURES */}
           {(userPlan==='starter'||userPlan==='pro') && (
-            <div style={{marginTop:28,background:'rgba(108,71,255,.08)',border:'1px solid rgba(108,71,255,.2)',borderRadius:14,padding:24}}>
-              <div style={{fontSize:13,fontWeight:700,color:'var(--accent3)',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:16}}>
-                {userPlan==='starter'?'✦ Starter Plan Features':'✦ Pro Plan Features'}
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                <button style={{padding:'12px 16px',background:'linear-gradient(135deg,var(--accent),var(--accent2))',border:'none',borderRadius:10,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
-                  onClick={()=>alert('PDF download — coming soon! This will generate a formatted PDF of your letter.')}>
-                  📄 Download PDF
-                </button>
-                <button style={{padding:'12px 16px',background:'rgba(255,255,255,.06)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
-                  onClick={()=>alert('Phone script — coming soon! This will generate a call script to use with the company.')}>
-                  📞 Phone Script
-                </button>
-                <button style={{padding:'12px 16px',background:'rgba(255,255,255,.06)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
-                  onClick={()=>alert('Follow-up letter — coming soon! This generates an escalation letter if they ignore your first one.')}>
-                  🔄 Follow-up Letter
-                </button>
-                {userPlan==='pro' && (
-                  <button style={{padding:'12px 16px',background:'rgba(255,255,255,.06)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
-                    onClick={()=>alert('BBB complaint template — coming soon! Pre-filled complaint for Better Business Bureau.')}>
-                    ⭐ BBB Template
-                  </button>
-                )}
-                {userPlan==='pro' && (
-                  <button style={{padding:'12px 16px',background:'rgba(255,255,255,.06)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
-                    onClick={()=>alert('Small claims guide — coming soon! Step-by-step guide for your specific state.')}>
-                    ⚖️ Small Claims Guide
-                  </button>
-                )}
-              </div>
-              <div style={{fontSize:11,color:'var(--muted)',marginTop:12}}>
-                ✓ These features confirmed working. Full build coming after PayPal setup.
-              </div>
-            </div>
+            <PlanFeatures userPlan={userPlan} letter={letter} form={form} disputeType={disputeType} tips={tips}/>
           )}
 
           {userPlan==='free' && (
@@ -1133,7 +1500,7 @@ export default function App() {
           <div className="footer-logo">
             <LogoIcon size={26}/>
             <span style={{fontWeight:800}}>
-              <span style={{color:'#fff'}}>Claw</span>
+              <span style={{color:'var(--text)'}}>Claw</span>
               <span style={{background:'linear-gradient(135deg,#6c47ff,#8b5cf6)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>back</span>
             </span>
           </div>
