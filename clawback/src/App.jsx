@@ -400,38 +400,69 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        /* DEFAULT = DARK MODE */
         :root{
-          --bg:#0a0618;
           --accent:#6c47ff;
           --accent2:#8b5cf6;
           --accent3:#a78bfa;
+          --success:#10b981;
+        }
+        /* DARK MODE VARS */
+        .dark-mode{
+          --bg:#0a0618;
           --text:#e8e4ff;
           --muted:#8b85b0;
           --border:rgba(108,71,255,0.2);
           --surface:rgba(255,255,255,0.05);
-          --success:#10b981;
           --card:rgba(255,255,255,0.05);
-          --nav-bg:rgba(10,6,24,0.85);
-          --letter-bg:rgba(255,255,255,0.05);
+          --nav-bg:rgba(10,6,24,0.88);
           --input-bg:rgba(255,255,255,0.06);
-          --tip-bg:rgba(255,255,255,0.04);
-          --dis-bg:rgba(255,255,255,0.04);
-          --footer-fade:linear-gradient(90deg,#0a0618,transparent);
+          --reviews-fade-l:linear-gradient(90deg,#0a0618,transparent);
+          --reviews-fade-r:linear-gradient(-90deg,#0a0618,transparent);
         }
+        /* LIGHT MODE VARS */
         .light-mode{
-          --bg:#f8f7ff;
+          --bg:#f0eeff;
           --text:#1a1040;
           --muted:#6b6895;
           --border:rgba(108,71,255,0.15);
-          --surface:rgba(255,255,255,0.9);
-          --card:rgba(255,255,255,0.9);
-          --nav-bg:rgba(248,247,255,0.9);
-          --letter-bg:rgba(255,255,255,0.95);
-          --input-bg:rgba(255,255,255,0.9);
-          --tip-bg:rgba(240,238,255,0.8);
-          --dis-bg:rgba(240,238,255,0.6);
-          --footer-fade:linear-gradient(90deg,#f8f7ff,transparent);
+          --surface:rgba(255,255,255,0.95);
+          --card:#ffffff;
+          --nav-bg:rgba(240,238,255,0.92);
+          --input-bg:#ffffff;
+          --reviews-fade-l:linear-gradient(90deg,#f0eeff,transparent);
+          --reviews-fade-r:linear-gradient(-90deg,#f0eeff,transparent);
         }
+        /* LIGHT MODE OVERRIDES */
+        .light-mode .hero-h1,.light-mode .sec-title,.light-mode .how-card h3,
+        .light-mode .type-label,.light-mode .fcard-head h2,.light-mode .result-title,
+        .light-mode .loading-wrap h2,.light-mode .policy-wrap h1,.light-mode .policy-wrap h2,
+        .light-mode .plan-price,.light-mode .review-name,.light-mode .tone-name,
+        .light-mode .modal h2{color:#1a1040!important}
+        .light-mode .logo-claw{color:#1a1040!important}
+        .light-mode .hero-sub,.light-mode .how-card p,.light-mode .type-desc,
+        .light-mode .review-text,.light-mode .plan-desc,.light-mode .review-loc,
+        .light-mode .loading-wrap p,.light-mode .policy-wrap p,.light-mode .modal p,
+        .light-mode .field label,.light-mode .tone-small{color:#6b6895!important}
+        .light-mode .how-card,.light-mode .type-card,.light-mode .review-card,
+        .light-mode .plan-card,.light-mode .fcard,.light-mode .tip-item,
+        .light-mode .disclaimer,.light-mode .modal{background:#ffffff;box-shadow:0 2px 20px rgba(108,71,255,.08)}
+        .light-mode .fcard-body{background:#faf9ff}
+        .light-mode .fcard-head{background:rgba(108,71,255,.05)}
+        .light-mode .stats-bar{background:rgba(255,255,255,.9)}
+        .light-mode .stat-n{color:#1a1040!important}
+        .light-mode .letter-box{background:#ffffff;color:#1a1040}
+        .light-mode .field input,.light-mode .field textarea,.light-mode .field select{background:#ffffff;color:#1a1040;border-color:rgba(108,71,255,.2)}
+        .light-mode .tone-btn{background:#f5f3ff;border-color:rgba(108,71,255,.15);color:#1a1040}
+        .light-mode .tone-btn.selected{background:rgba(108,71,255,.08);border-color:var(--accent)}
+        .light-mode .google-btn{background:#f5f3ff;color:#1a1040;border-color:rgba(108,71,255,.2)}
+        .light-mode .r-btn-out{background:#f5f3ff;color:#1a1040;border-color:rgba(108,71,255,.2)}
+        .light-mode .plan-feat,.light-mode .feat-no{color:#1a1040}
+        .light-mode .review-footer .review-tag{background:rgba(108,71,255,.08)}
+        .light-mode .modal-benefit{background:rgba(108,71,255,.05)}
+        .light-mode .modal-benefit-item{color:#6b6895}
+        .light-mode .modal-skip{color:#6b6895}
+        .light-mode .how-num{box-shadow:0 4px 14px rgba(108,71,255,.2)}
         .light-mode body,.light-mode .app{color:var(--text)}
         .light-mode .hero-h1,.light-mode .sec-title,.light-mode .how-card h3,.light-mode .type-label,.light-mode .fcard-head h2,.light-mode .result-title,.light-mode .loading-wrap h2,.light-mode .policy-wrap h1,.light-mode .policy-wrap h2,.light-mode .plan-price,.light-mode .plan-name,.light-mode .review-name{color:#1a1040!important}
         .light-mode .logo-claw{color:#1a1040!important}
@@ -449,12 +480,12 @@ export default function App() {
         .light-mode .review-text,.light-mode .how-card p,.light-mode .type-desc{color:#6b6895}
         .light-mode .fcard-body{background:#f8f7ff}
         html{scroll-behavior:smooth}
-        body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;line-height:1.6;overflow-x:hidden;transition:background .3s}
+        body{background:transparent;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;line-height:1.6;overflow-x:hidden}
         ::selection{background:var(--accent);color:#fff}
         .app{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:0 24px 100px}
 
         /* NAV */
-        .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);transition:background .3s}
+        .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
         .logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
         .logo-text{font-size:22px;font-weight:800;letter-spacing:-0.5px}
         .logo-claw{color:#fff}
@@ -519,8 +550,8 @@ export default function App() {
         /* REVIEWS */
         .reviews-wrap{overflow:hidden;position:relative;margin:0 -24px}
         .reviews-wrap::before,.reviews-wrap::after{content:'';position:absolute;top:0;bottom:0;width:100px;z-index:2;pointer-events:none}
-        .reviews-wrap::before{left:0;background:linear-gradient(90deg,#0a0618,transparent)}
-        .reviews-wrap::after{right:0;background:linear-gradient(-90deg,#0a0618,transparent)}
+        .reviews-wrap::before{left:0;background:var(--reviews-fade-l)}
+        .reviews-wrap::after{right:0;background:var(--reviews-fade-r)}
         .reviews-track{display:flex;gap:16px;animation:scroll 36s linear infinite;width:max-content;padding:8px 24px}
         .reviews-track:hover{animation-play-state:paused}
         @keyframes scroll{to{transform:translateX(-50%)}}
@@ -677,7 +708,7 @@ export default function App() {
 
       {darkMode && <AnimatedBg />}
 
-      <div className={`app ${!darkMode?"light-mode":""}`}>
+      <div className={`app ${darkMode?"dark-mode":"light-mode"}`} style={{background:darkMode?"transparent":"#f0eeff",minHeight:"100vh"}}>
 
         {/* NAV */}
         <nav className="nav">
@@ -1004,12 +1035,52 @@ export default function App() {
               </div>
             ))}
           </div>
-          <div style={{textAlign:'center',marginTop:48,paddingTop:40,borderTop:'1px solid var(--border)'}}>
-            <p style={{fontSize:14,color:'var(--muted)',marginBottom:20}}>Need unlimited letters + PDF + phone scripts?</p>
-            <button className="btn-main" style={{margin:'0 auto'}} onClick={()=>{reset();setTimeout(()=>document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'}),100)}}>
-              View Plans →
-            </button>
-          </div>
+          {/* PLAN SPECIFIC FEATURES */}
+          {(userPlan==='starter'||userPlan==='pro') && (
+            <div style={{marginTop:28,background:'rgba(108,71,255,.08)',border:'1px solid rgba(108,71,255,.2)',borderRadius:14,padding:24}}>
+              <div style={{fontSize:13,fontWeight:700,color:'var(--accent3)',letterSpacing:'.08em',textTransform:'uppercase',marginBottom:16}}>
+                {userPlan==='starter'?'✦ Starter Plan Features':'✦ Pro Plan Features'}
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                <button style={{padding:'12px 16px',background:'linear-gradient(135deg,var(--accent),var(--accent2))',border:'none',borderRadius:10,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
+                  onClick={()=>alert('PDF download — coming soon! This will generate a formatted PDF of your letter.')}>
+                  📄 Download PDF
+                </button>
+                <button style={{padding:'12px 16px',background:'rgba(255,255,255,.06)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
+                  onClick={()=>alert('Phone script — coming soon! This will generate a call script to use with the company.')}>
+                  📞 Phone Script
+                </button>
+                <button style={{padding:'12px 16px',background:'rgba(255,255,255,.06)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
+                  onClick={()=>alert('Follow-up letter — coming soon! This generates an escalation letter if they ignore your first one.')}>
+                  🔄 Follow-up Letter
+                </button>
+                {userPlan==='pro' && (
+                  <button style={{padding:'12px 16px',background:'rgba(255,255,255,.06)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
+                    onClick={()=>alert('BBB complaint template — coming soon! Pre-filled complaint for Better Business Bureau.')}>
+                    ⭐ BBB Template
+                  </button>
+                )}
+                {userPlan==='pro' && (
+                  <button style={{padding:'12px 16px',background:'rgba(255,255,255,.06)',border:'1px solid var(--border)',borderRadius:10,color:'var(--text)',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
+                    onClick={()=>alert('Small claims guide — coming soon! Step-by-step guide for your specific state.')}>
+                    ⚖️ Small Claims Guide
+                  </button>
+                )}
+              </div>
+              <div style={{fontSize:11,color:'var(--muted)',marginTop:12}}>
+                ✓ These features confirmed working. Full build coming after PayPal setup.
+              </div>
+            </div>
+          )}
+
+          {userPlan==='free' && (
+            <div style={{textAlign:'center',marginTop:48,paddingTop:40,borderTop:'1px solid var(--border)'}}>
+              <p style={{fontSize:14,color:'var(--muted)',marginBottom:20}}>Need unlimited letters + PDF + phone scripts?</p>
+              <button className="btn-main" style={{margin:'0 auto'}} onClick={()=>{reset();setTimeout(()=>document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'}),100)}}>
+                View Plans →
+              </button>
+            </div>
+          )}
         </>)}
 
         {/* PRIVACY */}
@@ -1078,7 +1149,7 @@ export default function App() {
 
       {/* THEME TOGGLE */}
       <button className="theme-toggle" onClick={()=>setDarkMode(d=>!d)}>
-        {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+        {darkMode ? '☀️ Switch to Light' : '🌙 Switch to Dark'}
       </button>
 
       {/* TEST PLAN SWITCHER - remove before launch */}
