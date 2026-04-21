@@ -571,14 +571,27 @@ ${form.yourName||'[YOUR NAME]'}`)
   const bbbText = (BBB_TEMPLATES[disputeType] || BBB_TEMPLATES.other)(form)
   const smallClaimsText = SMALL_CLAIMS[form.country] || SMALL_CLAIMS.US
 
-  const btnStyle = (primary) => ({
+  const [hoveredBtn, setHoveredBtn] = useState(null)
+
+  const btnStyle = (primary, btnId) => ({
     padding:'12px 16px',
-    background: primary ? 'linear-gradient(135deg,#6c47ff,#8b5cf6)' : 'rgba(255,255,255,.06)',
+    background: primary
+      ? hoveredBtn===btnId
+        ? 'linear-gradient(135deg,#5538e0,#7c3aed)'
+        : 'linear-gradient(135deg,#6c47ff,#8b5cf6)'
+      : hoveredBtn===btnId
+        ? 'rgba(108,71,255,.15)'
+        : 'rgba(255,255,255,.06)',
     border: primary ? 'none' : '1px solid rgba(108,71,255,.2)',
     borderRadius:10, color: primary ? '#fff' : 'var(--text)',
     fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
-    display:'flex', alignItems:'center', gap:8, transition:'all .15s',
+    display:'flex', alignItems:'center', gap:8,
+    transition:'all .2s cubic-bezier(.34,1.56,.64,1)',
     width:'100%', textAlign:'left',
+    transform: hoveredBtn===btnId ? 'translateY(-2px) scale(1.01)' : 'translateY(0) scale(1)',
+    boxShadow: hoveredBtn===btnId
+      ? primary ? '0 8px 20px rgba(108,71,255,.4)' : '0 4px 12px rgba(108,71,255,.15)'
+      : 'none',
   })
 
   const contentBox = {
@@ -597,37 +610,37 @@ ${form.yourName||'[YOUR NAME]'}`)
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
 
         {/* PDF DOWNLOAD */}
-        <button style={btnStyle(true)} onClick={handlePDF}>
+        <button style={btnStyle(true,"pdf")} onMouseEnter={()=>setHoveredBtn("pdf")} onMouseLeave={()=>setHoveredBtn(null)} onClick={handlePDF}>
           📄 Download PDF
         </button>
 
         {/* PHONE SCRIPT */}
-        <button style={btnStyle(false)} onClick={handlePhoneScript}>
+        <button style={btnStyle(false,"phone")} onMouseEnter={()=>setHoveredBtn("phone")} onMouseLeave={()=>setHoveredBtn(null)} onClick={handlePhoneScript}>
           📞 Phone Script {activeFeature==='phone'&&!phoneScript&&loading?'...':''}
         </button>
 
         {/* FOLLOW-UP LETTER */}
-        <button style={btnStyle(false)} onClick={handleFollowUp}>
+        <button style={btnStyle(false,"followup")} onMouseEnter={()=>setHoveredBtn("followup")} onMouseLeave={()=>setHoveredBtn(null)} onClick={handleFollowUp}>
           🔄 Follow-up Letter {activeFeature==='followup'&&!followUp&&loading?'...':''}
         </button>
 
         {/* BBB TEMPLATE — Pro only */}
         {userPlan==='pro' && (
-          <button style={btnStyle(false)} onClick={handleBBB}>
+          <button style={btnStyle(false,"bbb")} onMouseEnter={()=>setHoveredBtn("bbb")} onMouseLeave={()=>setHoveredBtn(null)} onClick={handleBBB}>
             ⭐ BBB Complaint Template
           </button>
         )}
 
         {/* SMALL CLAIMS — Pro only */}
         {userPlan==='pro' && (
-          <button style={btnStyle(false)} onClick={handleSmallClaims}>
+          <button style={btnStyle(false,"sc")} onMouseEnter={()=>setHoveredBtn("sc")} onMouseLeave={()=>setHoveredBtn(null)} onClick={handleSmallClaims}>
             ⚖️ Small Claims Guide
           </button>
         )}
 
         {/* PRIORITY SUPPORT — Pro only */}
         {userPlan==='pro' && (
-          <a href="mailto:support@getclawback.gmail.com?subject=Priority Support Request"
+          <a href="mailto:getclawback@gmail.com?subject=Priority Support - Clawback Pro"
             style={{...btnStyle(false), textDecoration:'none'}}>
             🎯 Priority Email Support
           </a>
@@ -878,18 +891,21 @@ export default function App() {
         .light-mode .review-text,.light-mode .how-card p,.light-mode .type-desc{color:#6b6895}
         .light-mode .fcard-body{background:#f8f7ff}
         html{scroll-behavior:smooth}
-        body{background:transparent;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;line-height:1.6;overflow-x:hidden}
+        html{height:100%;background:#0a0618}
+        body{background:transparent;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100%;line-height:1.6;overflow-x:hidden}
+        .dark-mode-bg{position:fixed;inset:0;background:#0a0618;z-index:-1}
         ::selection{background:var(--accent);color:#fff}
-        .app{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:0 24px 100px}
+        .app{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:0 28px 100px}
 
         /* NAV */
         .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+        .nav-outer{position:sticky;top:0;z-index:100;background:var(--nav-bg);backdrop-filter:blur(20px);margin:0 -24px;padding:0 24px}
         .logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
         .logo-text{font-size:22px;font-weight:800;letter-spacing:-0.5px}
         .logo-claw{color:#fff}
         .logo-back{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .nav-right{display:flex;align-items:center;gap:8px}
-        .nav-btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s}
+        .nav-right{display:flex;align-items:center;gap:10px}
+        .nav-btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s}
         .nav-ghost{background:transparent;color:var(--muted)}
         .nav-ghost:hover{color:var(--text);background:var(--surface)}
         .nav-solid{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 14px rgba(108,71,255,.35)}
@@ -1104,6 +1120,8 @@ export default function App() {
         @keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
       `}</style>
 
+      {/* Always render dark base to prevent white flash */}
+      <div className="dark-mode-bg" style={{background: darkMode ? '#0a0618' : '#f0eeff'}}/>
       {darkMode && <AnimatedBg />}
       {/* Full-width background for light mode */}
       {!darkMode && <div style={{position:'fixed',inset:0,background:'#f0eeff',zIndex:0}}/>}
