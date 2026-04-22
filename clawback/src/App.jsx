@@ -1,18 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
+import { createClient } from '@supabase/supabase-js'
 
 // ── Supabase Client ──────────────────────────────────────────────────
-// Install: npm install @supabase/supabase-js
-// Add to .env.local: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
-let supabase = null
-try {
-  const { createClient } = await import('@supabase/supabase-js').catch(()=>({createClient:null}))
-  if (createClient && import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
-    supabase = createClient(
-      import.meta.env.VITE_SUPABASE_URL,
-      import.meta.env.VITE_SUPABASE_ANON_KEY
-    )
-  }
-} catch(e) { console.log('Supabase not configured yet') }
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 // ── PayPal IDs (SET TO FREE FOR TESTING — swap back after testing) ───
 const TESTING_MODE = true // set false when ready to charge
