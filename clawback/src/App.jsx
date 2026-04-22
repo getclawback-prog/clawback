@@ -1,5 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 
+// ── Supabase Client ──────────────────────────────────────────────────
+// Install: npm install @supabase/supabase-js
+// Add to .env.local: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+let supabase = null
+try {
+  const { createClient } = await import('@supabase/supabase-js').catch(()=>({createClient:null}))
+  if (createClient && import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY) {
+    supabase = createClient(
+      import.meta.env.VITE_SUPABASE_URL,
+      import.meta.env.VITE_SUPABASE_ANON_KEY
+    )
+  }
+} catch(e) { console.log('Supabase not configured yet') }
+
 // ── PayPal IDs (SET TO FREE FOR TESTING — swap back after testing) ───
 const TESTING_MODE = true // set false when ready to charge
 const PAYPAL_STARTER_MONTHLY = 'YOUR_STARTER_MONTHLY_PLAN_ID'
@@ -727,9 +741,44 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [letterCount, setLetterCount] = useState(getLetterCount())
   const [darkMode, setDarkMode] = useState(true)
-  const [testPlan, setTestPlan] = useState('free') // for testing only: 'free' | 'starter' | 'pro'
+  const [testPlan, setTestPlan] = useState('pro') // default pro for recording
+  const [showTestSwitcher, setShowTestSwitcher] = useState(false) // set true to show plan switcher
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
+
+  // Supabase auth state listener
+  useEffect(() => {
+    if (!supabase) return
+    // Check if user already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const u = session.user
+        setUser({
+          name: u.user_metadata?.full_name || u.email,
+          email: u.email,
+          avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
+          plan: 'free'
+        })
+        setShowAuthModal(false)
+      }
+    })
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const u = session.user
+        setUser({
+          name: u.user_metadata?.full_name || u.email,
+          email: u.email,
+          avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
+          plan: 'free'
+        })
+        setShowAuthModal(false)
+      } else {
+        setUser(null)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   // Show signup modal on first visit
   useEffect(() => {
@@ -745,16 +794,33 @@ export default function App() {
     return () => clearInterval(t)
   }, [])
 
-  function handleGoogleSignIn() {
-    // Production: integrate Firebase Google OAuth
-    const mockUser = { name:'Demo User', email:'demo@gmail.com', avatar:'D', plan:'free' }
-    setUser(mockUser)
-    setShowAuthModal(false)
-    localStorage.setItem('cb_usage', JSON.stringify({ month:new Date().toISOString().slice(0,7), count:0 }))
-    setLetterCount(0)
+  async function handleGoogleSignIn() {
+    if (supabase) {
+      // Real Google OAuth via Supabase
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: { access_type: 'offline', prompt: 'consent' }
+        }
+      })
+      if (error) console.error('Auth error:', error)
+      // Page will redirect to Google then back — user set in useEffect below
+    } else {
+      // Fallback mock if Supabase not configured
+      const mockUser = { name:'Demo User', email:'demo@gmail.com', avatar:'D', plan:'free' }
+      setUser(mockUser)
+      setShowAuthModal(false)
+      localStorage.setItem('cb_usage', JSON.stringify({ month:new Date().toISOString().slice(0,7), count:0 }))
+      setLetterCount(0)
+    }
   }
 
-  function signOut() { setUser(null); setLetterCount(getLetterCount()) }
+  async function signOut() {
+    if (supabase) await supabase.auth.signOut()
+    setUser(null)
+    setLetterCount(getLetterCount())
+  }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
   const canGenerate = TESTING_MODE ? true : (userPlan !== 'free' || letterCount < FREE_LIMIT)
@@ -866,13 +932,13 @@ export default function App() {
         .light-mode .field input,.light-mode .field textarea,.light-mode .field select{background:#ffffff;color:#1a1040;border-color:rgba(108,71,255,.2)}
         .light-mode .tone-btn{background:#f5f3ff;border-color:rgba(108,71,255,.15);color:#1a1040}
         .light-mode .tone-btn.selected{background:rgba(108,71,255,.08);border-color:var(--accent)}
-        .light-mode .google-btn{background:#f5f3ff;color:#1a1040;border-color:rgba(108,71,255,.2)}
+        .light-mode .google-btn{background:rgba(255,255,255,.07);color:#fff;border-color:rgba(108,71,255,.3)}
         .light-mode .r-btn-out{background:#f5f3ff;color:#1a1040;border-color:rgba(108,71,255,.2)}
         .light-mode .plan-feat,.light-mode .feat-no{color:#1a1040}
         .light-mode .review-footer .review-tag{background:rgba(108,71,255,.08)}
-        .light-mode .modal-benefit{background:rgba(108,71,255,.05)}
-        .light-mode .modal-benefit-item{color:#6b6895}
-        .light-mode .modal-skip{color:#6b6895}
+        .light-mode .modal-benefit{background:rgba(108,71,255,.1)}
+        .light-mode .modal-benefit-item{color:#8b85b0!important}
+        .light-mode .modal-skip{color:#8b85b0!important}
         .light-mode .how-num{box-shadow:0 4px 14px rgba(108,71,255,.2)}
         .light-mode body,.light-mode .app{color:var(--text)}
         .light-mode .hero-h1,.light-mode .sec-title,.light-mode .how-card h3,.light-mode .type-label,.light-mode .fcard-head h2,.light-mode .result-title,.light-mode .loading-wrap h2,.light-mode .policy-wrap h1,.light-mode .policy-wrap h2,.light-mode .plan-price,.light-mode .plan-name,.light-mode .review-name{color:#1a1040!important}
@@ -885,7 +951,7 @@ export default function App() {
         .light-mode .tone-name{color:#1a1040!important}
         .light-mode .modal{background:#ffffff}
         .light-mode .google-btn{background:rgba(0,0,0,.04);color:#1a1040}
-        .light-mode .modal h2,.light-mode .modal p{color:#1a1040}
+        .light-mode .modal h2{color:#ffffff!important}.light-mode .modal p{color:#8b85b0!important}
         .light-mode .reviews-wrap::before{background:linear-gradient(90deg,#f8f7ff,transparent)!important}
         .light-mode .reviews-wrap::after{background:linear-gradient(-90deg,#f8f7ff,transparent)!important}
         .light-mode .review-text,.light-mode .how-card p,.light-mode .type-desc{color:#6b6895}
@@ -1076,16 +1142,16 @@ export default function App() {
 
         /* AUTH MODAL */
         .modal-overlay{position:fixed;inset:0;background:rgba(10,6,24,.8);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;backdrop-filter:blur(8px)}
-        .modal{background:#13102b;border:1px solid var(--border);border-radius:24px;width:100%;max-width:420px;padding:36px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.5)}
-        .modal h2{font-size:24px;font-weight:800;color:#fff;margin-bottom:10px;letter-spacing:-0.5px}
-        .modal p{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.65}
+        .modal{background:#13102b;border:1px solid var(--border);border-radius:24px;width:100%;max-width:420px;padding:36px;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.5);color:#e8e4ff}
+        .modal h2{font-size:24px;font-weight:800;color:#ffffff!important;margin-bottom:10px;letter-spacing:-0.5px}
+        .modal p{font-size:14px;color:#8b85b0!important;margin-bottom:28px;line-height:1.65}
         .google-btn{width:100%;padding:15px;background:rgba(255,255,255,.07);border:1.5px solid var(--border);border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:12px;transition:all .2s;color:#fff;margin-bottom:12px}
         .google-btn:hover{border-color:var(--accent);background:rgba(108,71,255,.1);transform:translateY(-1px)}
         .google-icon{width:20px;height:20px;flex-shrink:0}
-        .modal-skip{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;transition:color .15s}
+        .modal-skip{background:none;border:none;color:#8b85b0!important;cursor:pointer;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;transition:color .15s}
         .modal-skip:hover{color:var(--text)}
-        .modal-benefit{background:rgba(108,71,255,.1);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;text-align:left}
-        .modal-benefit-item{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted);margin-bottom:8px}
+        .modal-benefit{background:rgba(108,71,255,.1);border:1px solid rgba(108,71,255,.2);border-radius:12px;padding:16px;margin-bottom:24px;text-align:left}
+        .modal-benefit-item{display:flex;gap:10px;align-items:center;font-size:13px;color:#8b85b0!important;margin-bottom:8px}
         .modal-benefit-item:last-child{margin:0}
         .modal-benefit-item span:first-child{color:var(--success);font-size:14px}
 
@@ -1251,11 +1317,7 @@ export default function App() {
               {billing==='yearly' && <span className="save-pill">Save 17%</span>}
             </div>
 
-            {TESTING_MODE && (
-              <div style={{textAlign:'center',marginBottom:20,padding:'10px',background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.2)',borderRadius:10,fontSize:13,color:'var(--success)'}}>
-                🧪 Testing mode — all plans are free to check features
-              </div>
-            )}
+            {/* Testing mode bar hidden for recording */}
 
             <div className="pricing-grid">
               {PLANS.map(p=>(
@@ -1267,9 +1329,9 @@ export default function App() {
                       {TESTING_MODE && !p.isFree ? '$0' : billing==='yearly'&&p.yearlyPrice&&!p.isFree ? p.yearlyPrice : p.price}
                     </span>
                     <span className="plan-period">
-                      {p.isFree ? '/forever' : TESTING_MODE ? ' (free to test)' : billing==='yearly' ? '/mo' : `/${p.period}`}
+                      {p.isFree ? '/forever' : false ? ' (free to test)' : billing==='yearly' ? '/mo' : `/${p.period}`}
                     </span>
-                    {TESTING_MODE && !p.isFree && <span className="test-badge">TESTING</span>}
+                    {/* test badge hidden */}
                   </div>
                   {billing==='yearly' && p.yearlyTotal && !TESTING_MODE && !p.isFree && (
                     <div className="plan-yearly-note">{p.yearlyTotal}/year · save 17%</div>
@@ -1288,8 +1350,8 @@ export default function App() {
                       Start Free — No Card Needed
                     </button>
                   ) : TESTING_MODE ? (
-                    <button className="plan-btn plan-btn-outline" onClick={()=>setScreen('form')}>
-                      Test {p.name} Features Free →
+                    <button className={`plan-btn ${p.highlight?'plan-btn-primary':'plan-btn-outline'}`} onClick={()=>setScreen('form')}>
+                      {p.cta} — {billing==='yearly' ? p.yearlyTotal+'/yr' : p.price+'/mo'} →
                     </button>
                   ) : (
                     <a
@@ -1326,14 +1388,7 @@ export default function App() {
             <div style={{marginBottom:24,textAlign:'center'}}>
               <h2 style={{fontSize:26,fontWeight:800,color:'var(--text)',letterSpacing:'-0.5px'}}>Build your dispute letter</h2>
               <p style={{fontSize:14,color:'var(--muted)',marginTop:6}}>Takes about 2 minutes</p>
-              {TESTING_MODE && (
-                <div style={{marginTop:12,background:'rgba(16,185,129,.1)',border:'1px solid rgba(16,185,129,.25)',borderRadius:10,padding:'10px 16px',fontSize:13,color:'var(--success)'}}>
-                  🧪 Testing as <strong>{testPlan.charAt(0).toUpperCase()+testPlan.slice(1)} plan</strong> — switch plans using the button at bottom-left
-                  {testPlan==='free' && ' · 2 letters/month · Copy only'}
-                  {testPlan==='starter' && ' · Unlimited · PDF · Phone script · Follow-up letter'}
-                  {testPlan==='pro' && ' · Everything · BBB template · Small claims guide · Priority support'}
-                </div>
-              )}
+              {/* Testing banner hidden for recording */}
               {!user && (
                 <div style={{marginTop:10,fontSize:12,color:'var(--muted)'}}>
                   {Math.max(0,FREE_LIMIT-letterCount)} free letter{FREE_LIMIT-letterCount===1?'':'s'} remaining ·{' '}
@@ -1537,8 +1592,8 @@ export default function App() {
         {darkMode ? '☀️ Switch to Light' : '🌙 Switch to Dark'}
       </button>
 
-      {/* TEST PLAN SWITCHER - remove before launch */}
-      {TESTING_MODE && (
+      {/* TEST PLAN SWITCHER - set showTestSwitcher=true to show */}
+      {TESTING_MODE && showTestSwitcher && (
         <div className="test-switcher">
           <div className="test-switcher-label">🧪 Test as plan:</div>
           <div className="test-switcher-btns">
