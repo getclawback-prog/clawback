@@ -1381,7 +1381,7 @@ export default function App() {
               <h2 style={{fontSize:26,fontWeight:800,color:'var(--text)',letterSpacing:'-0.5px'}}>Build your dispute letter</h2>
               <p style={{fontSize:14,color:'var(--muted)',marginTop:6}}>Takes about 2 minutes</p>
               {/* Testing banner hidden for recording */}
-              {!user && (
+              {!user && userPlan==='free' && (
                 <div style={{marginTop:10,fontSize:12,color:'var(--muted)'}}>
                   {Math.max(0,FREE_LIMIT-letterCount)} free letter{FREE_LIMIT-letterCount===1?'':'s'} remaining ·{' '}
                   <span style={{color:'var(--accent3)',cursor:'pointer',fontWeight:600}} onClick={()=>setShowAuthModal(true)}>Sign up to save history</span>
