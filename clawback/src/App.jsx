@@ -7,7 +7,7 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 // ── PayPal IDs (SET TO FREE FOR TESTING — swap back after testing) ───
-const TESTING_MODE = true // set false when ready to charge
+const TESTING_MODE = false // LIVE — plans are paid
 const PAYPAL_STARTER_MONTHLY = 'YOUR_STARTER_MONTHLY_PLAN_ID'
 const PAYPAL_STARTER_YEARLY  = 'YOUR_STARTER_YEARLY_PLAN_ID'
 const PAYPAL_PRO_MONTHLY     = 'YOUR_PRO_MONTHLY_PLAN_ID'
@@ -159,17 +159,25 @@ Enclosures: [Attach all relevant receipts, correspondence, and documentation]`
 }
 
 const FREE_LIMIT = 2
+
 function getLetterCount() {
   try {
     const d = JSON.parse(localStorage.getItem('cb_usage')||'{}')
     const month = new Date().toISOString().slice(0,7)
-    return d.month===month ? (d.count||0) : 0
+    // Different month = reset to 0. Never carries over unused letters.
+    if (d.month !== month) {
+      localStorage.setItem('cb_usage', JSON.stringify({ month, count: 0 }))
+      return 0
+    }
+    return d.count || 0
   } catch { return 0 }
 }
+
 function incrementLetterCount() {
   try {
     const month = new Date().toISOString().slice(0,7)
-    localStorage.setItem('cb_usage', JSON.stringify({ month, count: getLetterCount()+1 }))
+    const current = getLetterCount()
+    localStorage.setItem('cb_usage', JSON.stringify({ month, count: current + 1 }))
   } catch {}
 }
 
@@ -748,9 +756,10 @@ export default function App() {
   const [billing, setBilling] = useState('monthly')
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [letterCount, setLetterCount] = useState(getLetterCount())
+  const [currentLetterCounted, setCurrentLetterCounted] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
   const [testPlan, setTestPlan] = useState('free') // free by default
-  const [showTestSwitcher, setShowTestSwitcher] = useState(true) // TEMP: set false before recording
+  const [showTestSwitcher, setShowTestSwitcher] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
@@ -843,7 +852,7 @@ export default function App() {
   }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
-  const canGenerate = userPlan !== 'free' || letterCount < FREE_LIMIT
+  const canGenerate = userPlan !== 'free' || getLetterCount() < FREE_LIMIT
 
   async function generate() {
     if (!disputeType || !form.company || !form.description) return
@@ -875,14 +884,25 @@ export default function App() {
       const text = data.choices?.[0]?.message?.content
       setLetter(text && text.length>80 ? text : generateTemplate({disputeType,form}))
     } catch { setLetter(generateTemplate({disputeType,form})) }
-    if (userPlan==='free') { incrementLetterCount(); setLetterCount(getLetterCount()) }
+    if (userPlan==='free' && !currentLetterCounted) {
+      incrementLetterCount()
+      setLetterCount(getLetterCount())
+      setCurrentLetterCounted(true)
+    }
     setTips(TIPS[disputeType]||TIPS.other)
     setScreen('result')
   }
 
   function copyLetter() { navigator.clipboard.writeText(letter); setCopied(true); setTimeout(()=>setCopied(false),2500) }
 
-  function reset() { setScreen('home'); setLetter(''); setDisputeType(null); setForm({ company:'',amount:'',description:'',desired:'',tone:'firm',yourName:'',city:'',country:'US' }); window.scrollTo(0,0) }
+  function reset() {
+    setScreen('home')
+    setLetter('')
+    setDisputeType(null)
+    setForm({ company:'',amount:'',description:'',desired:'',tone:'firm',yourName:'',city:'',country:'US' })
+    setCurrentLetterCounted(false) // reset so new dispute counts fresh
+    window.scrollTo(0,0)
+  }
 
   const C = { // CSS vars shorthand for inline styles
     accent:'#6c47ff', text:'#e8e4ff', muted:'#8b85b0', dark:'#0a0618',
