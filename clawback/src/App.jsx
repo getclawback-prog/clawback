@@ -680,7 +680,11 @@ ${form.yourName||'[YOUR NAME]'}`)
           <div style={{fontSize:12,fontWeight:700,color:'var(--accent3)',margin:'16px 0 6px',letterSpacing:'.06em',textTransform:'uppercase'}}>📞 Your Phone Script</div>
           {loading && !phoneScript ? <div style={{color:'var(--muted)',fontSize:13,padding:16}}>Generating your script...</div>
           : <div style={contentBox}>{phoneScript}</div>}
-          {phoneScript && <button style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>{navigator.clipboard.writeText(phoneScript)}}>Copy Script</button>}
+          {phoneScript && <button
+            style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all .2s cubic-bezier(.34,1.56,.64,1)'}}
+            onMouseEnter={e=>{e.target.style.transform='translateY(-2px)';e.target.style.boxShadow='0 6px 16px rgba(108,71,255,.4)'}}
+            onMouseLeave={e=>{e.target.style.transform='none';e.target.style.boxShadow='none'}}
+            onClick={()=>{navigator.clipboard.writeText(phoneScript)}}>Copy Script</button>}
         </div>
       )}
 
@@ -689,7 +693,11 @@ ${form.yourName||'[YOUR NAME]'}`)
           <div style={{fontSize:12,fontWeight:700,color:'var(--accent3)',margin:'16px 0 6px',letterSpacing:'.06em',textTransform:'uppercase'}}>🔄 Your Follow-up Escalation Letter</div>
           {loading && !followUp ? <div style={{color:'var(--muted)',fontSize:13,padding:16}}>Generating follow-up letter...</div>
           : <div style={contentBox}>{followUp}</div>}
-          {followUp && <button style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>{navigator.clipboard.writeText(followUp)}}>Copy Letter</button>}
+          {followUp && <button
+            style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all .2s cubic-bezier(.34,1.56,.64,1)'}}
+            onMouseEnter={e=>{e.target.style.transform='translateY(-2px)';e.target.style.boxShadow='0 6px 16px rgba(108,71,255,.4)'}}
+            onMouseLeave={e=>{e.target.style.transform='none';e.target.style.boxShadow='none'}}
+            onClick={()=>{navigator.clipboard.writeText(followUp)}}>Copy Letter</button>}
         </div>
       )}
 
@@ -698,7 +706,11 @@ ${form.yourName||'[YOUR NAME]'}`)
           <div style={{fontSize:12,fontWeight:700,color:'var(--accent3)',margin:'16px 0 6px',letterSpacing:'.06em',textTransform:'uppercase'}}>⭐ BBB Complaint Template</div>
           <div style={contentBox}>{bbbText}</div>
           <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
-            <button style={{padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>{navigator.clipboard.writeText(bbbText)}}>Copy Template</button>
+            <button
+              style={{padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all .2s cubic-bezier(.34,1.56,.64,1)'}}
+              onMouseEnter={e=>{e.target.style.transform='translateY(-2px)';e.target.style.boxShadow='0 6px 16px rgba(108,71,255,.4)'}}
+              onMouseLeave={e=>{e.target.style.transform='none';e.target.style.boxShadow='none'}}
+              onClick={()=>{navigator.clipboard.writeText(bbbText)}}>Copy Template</button>
             <a href="https://www.bbb.org/file-a-complaint" target="_blank" rel="noreferrer" style={{padding:'8px 16px',background:'transparent',border:'1px solid rgba(108,71,255,.3)',borderRadius:8,color:'var(--accent3)',fontSize:12,fontWeight:700,textDecoration:'none'}}>File at BBB.org →</a>
           </div>
         </div>
@@ -708,7 +720,11 @@ ${form.yourName||'[YOUR NAME]'}`)
         <div>
           <div style={{fontSize:12,fontWeight:700,color:'var(--accent3)',margin:'16px 0 6px',letterSpacing:'.06em',textTransform:'uppercase'}}>⚖️ Small Claims Court Guide</div>
           <div style={contentBox}>{smallClaimsText}</div>
-          <button style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>{navigator.clipboard.writeText(smallClaimsText)}}>Copy Guide</button>
+          <button
+            style={{marginTop:8,padding:'8px 16px',background:'var(--accent)',border:'none',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all .2s cubic-bezier(.34,1.56,.64,1)'}}
+            onMouseEnter={e=>{e.target.style.transform='translateY(-2px)';e.target.style.boxShadow='0 6px 16px rgba(108,71,255,.4)'}}
+            onMouseLeave={e=>{e.target.style.transform='none';e.target.style.boxShadow='none'}}
+            onClick={()=>{navigator.clipboard.writeText(smallClaimsText)}}>Copy Guide</button>
         </div>
       )}
 
@@ -1244,7 +1260,7 @@ export default function App() {
               </>
             ) : (
               <button className="nav-btn nav-solid" onClick={()=>setShowAuthModal(true)}>
-                Sign Up
+                Sign In / Up
               </button>
             )}
             {screen!=='home' && <button className="nav-btn nav-ghost" onClick={reset}>← Home</button>}
@@ -1520,7 +1536,11 @@ export default function App() {
               <div className="result-title">Your Dispute Letter</div>
             </div>
             <div className="result-actions">
-              <button className="r-btn r-btn-main" onClick={copyLetter}>📋 Copy Letter</button>
+              <button className="r-btn r-btn-main" onClick={copyLetter}
+                style={{transition:'all .2s cubic-bezier(.34,1.56,.64,1)'}}
+                onMouseEnter={e=>{e.target.style.transform='translateY(-2px)';e.target.style.boxShadow='0 8px 20px rgba(108,71,255,.45)'}}
+                onMouseLeave={e=>{e.target.style.transform='none';e.target.style.boxShadow='none'}}>
+                📋 Copy Letter</button>
               <button className="r-btn r-btn-out" onClick={()=>setScreen('form')}>← Edit</button>
               <button className="r-btn r-btn-out" onClick={reset}>+ New</button>
             </div>
@@ -1638,8 +1658,8 @@ export default function App() {
         <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowAuthModal(false)}>
           <div className="modal">
             <LogoIcon size={44} style={{margin:'0 auto 16px'}}/>
-            <h2 style={{marginTop:16}}>Sign up to Clawback</h2>
-            <p>Free forever. Sign up to save your letter history and track usage across devices.</p>
+            <h2 style={{marginTop:16}}>Sign in to Clawback</h2>
+            <p>Sign in or create a free account to save your letter history and track usage across devices.</p>
             <div className="modal-benefit">
               <div className="modal-benefit-item"><span>✓</span>2 free dispute letters every month</div>
               <div className="modal-benefit-item"><span>✓</span>Save your letter history</div>
