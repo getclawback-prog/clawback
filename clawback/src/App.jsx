@@ -792,13 +792,21 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const u = session.user
-        setUser({
+        const newUser = {
           name: u.user_metadata?.full_name || u.email,
           email: u.email,
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
           plan: 'free'
-        })
+        }
+        setUser(newUser)
         setShowAuthModal(false)
+        // Reset letter count per account using email as key
+        const userKey = 'cb_usage_' + u.email
+        const month = new Date().toISOString().slice(0,7)
+        const saved = JSON.parse(localStorage.getItem(userKey)||'{}')
+        const count = saved.month === month ? (saved.count||0) : 0
+        localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
+        setLetterCount(count)
         if (disputeType) setScreen('form')
       }
     })
@@ -806,13 +814,21 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const u = session.user
-        setUser({
+        const newUser = {
           name: u.user_metadata?.full_name || u.email,
           email: u.email,
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
           plan: 'free'
-        })
+        }
+        setUser(newUser)
         setShowAuthModal(false)
+        // Reset letter count per account
+        const userKey = 'cb_usage_' + u.email
+        const month = new Date().toISOString().slice(0,7)
+        const saved = JSON.parse(localStorage.getItem(userKey)||'{}')
+        const count = saved.month === month ? (saved.count||0) : 0
+        localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
+        setLetterCount(count)
         if (disputeType) setScreen('form')
       } else {
         setUser(null)
@@ -905,7 +921,14 @@ export default function App() {
     } catch { setLetter(generateTemplate({disputeType,form})) }
     if (userPlan==='free') {
       incrementLetterCount()
-      setLetterCount(getLetterCount())
+      const newCount = getLetterCount()
+      setLetterCount(newCount)
+      // Save per-account count so each Google account gets fresh 2 letters
+      if (user?.email) {
+        const userKey = 'cb_usage_' + user.email
+        const month = new Date().toISOString().slice(0,7)
+        localStorage.setItem(userKey, JSON.stringify({ month, count: newCount }))
+      }
     }
     setTips(TIPS[disputeType]||TIPS.other)
     setScreen('result')
