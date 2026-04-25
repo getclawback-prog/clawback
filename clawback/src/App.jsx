@@ -764,6 +764,17 @@ export default function App() {
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
+  // Sync letter count across tabs instantly
+  useEffect(() => {
+    function handleStorageChange(e) {
+      if (e.key === 'cb_usage') {
+        setLetterCount(getLetterCount())
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
   // Close user menu when clicking outside
   useEffect(() => {
     function handleClick(e) {
@@ -789,6 +800,7 @@ export default function App() {
           plan: 'free'
         })
         setShowAuthModal(false)
+        if (disputeType) setScreen('form')
       }
     })
     // Listen for auth changes
@@ -802,6 +814,7 @@ export default function App() {
           plan: 'free'
         })
         setShowAuthModal(false)
+        if (disputeType) setScreen('form')
       } else {
         setUser(null)
       }
@@ -842,6 +855,8 @@ export default function App() {
       setShowAuthModal(false)
       localStorage.setItem('cb_usage', JSON.stringify({ month:new Date().toISOString().slice(0,7), count:0 }))
       setLetterCount(0)
+      // Go to form if dispute already selected
+      if (disputeType) setScreen('form')
     }
   }
 
@@ -856,6 +871,11 @@ export default function App() {
 
   async function generate() {
     if (!disputeType || !form.company || !form.description) return
+    // Force signup if not logged in
+    if (!user) {
+      setShowAuthModal(true)
+      return
+    }
     if (!canGenerate) { setShowAuthModal(true); return }
     setScreen('loading')
     try {
@@ -1296,7 +1316,7 @@ export default function App() {
             <span className="hero-rotating" key={wordIdx}>{words[wordIdx]}</span>
             <p className="hero-sub">Generate a legally-sharp dispute letter in seconds. Trusted by thousands to recover money from companies that count on you giving up.</p>
             <div className="hero-ctas">
-              <button className="btn-main" onClick={()=>setScreen('form')}>Generate My Letter ⚡</button>
+              <button className="btn-main" onClick={()=>{ if(!user){setShowAuthModal(true)} else {setScreen('form')} }}>Generate My Letter ⚡</button>
               <button className="btn-ghost" onClick={()=>document.getElementById('how')?.scrollIntoView({behavior:'smooth'})}>See how it works</button>
             </div>
             <div className="stats-bar">
@@ -1334,7 +1354,7 @@ export default function App() {
             <p className="sec-sub">Click any category to start your letter immediately.</p>
             <div className="types-grid">
               {DISPUTE_TYPES.map(d=>(
-                <button key={d.id} className="type-card" onClick={()=>{setDisputeType(d.id);setScreen('form')}}>
+                <button key={d.id} className="type-card" onClick={()=>{setDisputeType(d.id); if(!user){setShowAuthModal(true)} else {setScreen('form')}}}>
                   <span className="type-icon">{d.icon}</span>
                   <span className="type-label">{d.label}</span>
                   <span className="type-desc">{d.desc}</span>
@@ -1440,7 +1460,7 @@ export default function App() {
           <section style={{padding:'64px 0',textAlign:'center',borderTop:'1px solid var(--border)'}}>
             <h2 style={{fontSize:'clamp(26px,4vw,46px)',fontWeight:800,letterSpacing:'-1.5px',color:'var(--text)',marginBottom:14}}>Ready to fight back?</h2>
             <p style={{fontSize:16,color:'var(--muted)',marginBottom:32,maxWidth:380,margin:'0 auto 32px'}}>Generate your first letter free. No signup required.</p>
-            <button className="btn-main" style={{margin:'0 auto'}} onClick={()=>setScreen('form')}>Generate My Letter — Free ⚡</button>
+            <button className="btn-main" style={{margin:'0 auto'}} onClick={()=>{ if(!user){setShowAuthModal(true)} else {setScreen('form')} }}>Generate My Letter — Free ⚡</button>
           </section>
         </>)}
 
