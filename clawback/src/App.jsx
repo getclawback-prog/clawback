@@ -1560,13 +1560,11 @@ export default function App() {
                     <span style={{fontSize:20}}>⚠️</span>
                     <div>
                       <p><strong>You have used your 2 free letters this month.</strong><br/>
-                      {user ? 'Upgrade to Starter or Pro for unlimited letters.' : 'Sign in and upgrade for unlimited letters.'}</p>
+                      Upgrade to Starter or Pro for unlimited letters, PDF, phone scripts and more.</p>
                       <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
-                        {!user && (
-                          <button className="nav-btn nav-solid" style={{padding:'8px 16px',fontSize:13}} onClick={()=>setShowAuthModal(true)}>Sign In with Google</button>
-                        )}
-                        <button className="nav-btn nav-solid" style={{padding:'8px 16px',fontSize:13}} onClick={()=>{reset();setTimeout(()=>document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'}),100)}}>
-                          {user ? '⚡ Upgrade Plan →' : 'View Plans →'}
+                        <button className="nav-btn nav-solid" style={{padding:'8px 16px',fontSize:13}}
+                          onClick={()=>{reset();setTimeout(()=>document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'}),100)}}>
+                          ⚡ Upgrade Plan →
                         </button>
                       </div>
                     </div>
