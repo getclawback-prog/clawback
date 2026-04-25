@@ -1559,10 +1559,15 @@ export default function App() {
                   <div className="limit-warn">
                     <span style={{fontSize:20}}>⚠️</span>
                     <div>
-                      <p><strong>2 free letters used this month.</strong><br/>Sign up to track usage or upgrade for unlimited letters.</p>
+                      <p><strong>You have used your 2 free letters this month.</strong><br/>
+                      {user ? 'Upgrade to Starter or Pro for unlimited letters.' : 'Sign in and upgrade for unlimited letters.'}</p>
                       <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
-                        <button className="nav-btn nav-solid" style={{padding:'8px 16px',fontSize:13}} onClick={()=>setShowAuthModal(true)}>Sign Up with Google</button>
-                        <button style={{padding:'8px 16px',fontSize:13,background:'transparent',border:'1.5px solid var(--border)',borderRadius:8,color:'var(--text)',cursor:'pointer',fontFamily:'inherit',fontWeight:600}} onClick={()=>{reset();setTimeout(()=>document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'}),100)}}>View Plans →</button>
+                        {!user && (
+                          <button className="nav-btn nav-solid" style={{padding:'8px 16px',fontSize:13}} onClick={()=>setShowAuthModal(true)}>Sign In with Google</button>
+                        )}
+                        <button className="nav-btn nav-solid" style={{padding:'8px 16px',fontSize:13}} onClick={()=>{reset();setTimeout(()=>document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'}),100)}}>
+                          {user ? '⚡ Upgrade Plan →' : 'View Plans →'}
+                        </button>
                       </div>
                     </div>
                   </div>
