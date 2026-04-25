@@ -756,7 +756,6 @@ export default function App() {
   const [billing, setBilling] = useState('monthly')
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [letterCount, setLetterCount] = useState(getLetterCount())
-  const [currentLetterCounted, setCurrentLetterCounted] = useState(false)
   const [darkMode, setDarkMode] = useState(true)
   const [testPlan, setTestPlan] = useState('free') // free by default
   const [showTestSwitcher, setShowTestSwitcher] = useState(false)
@@ -904,10 +903,9 @@ export default function App() {
       const text = data.choices?.[0]?.message?.content
       setLetter(text && text.length>80 ? text : generateTemplate({disputeType,form}))
     } catch { setLetter(generateTemplate({disputeType,form})) }
-    if (userPlan==='free' && !currentLetterCounted) {
+    if (userPlan==='free') {
       incrementLetterCount()
       setLetterCount(getLetterCount())
-      setCurrentLetterCounted(true)
     }
     setTips(TIPS[disputeType]||TIPS.other)
     setScreen('result')
@@ -920,7 +918,6 @@ export default function App() {
     setLetter('')
     setDisputeType(null)
     setForm({ company:'',amount:'',description:'',desired:'',tone:'firm',yourName:'',city:'',country:'US' })
-    setCurrentLetterCounted(false) // reset so new dispute counts fresh
     window.scrollTo(0,0)
   }
 
