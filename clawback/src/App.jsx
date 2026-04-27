@@ -792,15 +792,39 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const u = session.user
+        // Load plan from Supabase profiles table
+        let userPlanFromDB = 'free'
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('email', u.email)
+            .single()
+          if (profile?.plan) userPlanFromDB = profile.plan
+          // Check subscription expiry
+          const { data: sub } = await supabase
+            .from('subscriptions')
+            .select('plan, expires_at, status')
+            .eq('email', u.email)
+            .single()
+          if (sub && sub.status === 'active' && new Date(sub.expires_at) > new Date()) {
+            userPlanFromDB = sub.plan
+          } else if (sub && new Date(sub.expires_at) < new Date()) {
+            // Subscription expired — force free
+            userPlanFromDB = 'free'
+            await supabase.from('profiles').upsert({ email: u.email, plan: 'free' }, { onConflict: 'email' })
+          }
+        } catch(e) { console.log('Profile load error:', e) }
+
         const newUser = {
           name: u.user_metadata?.full_name || u.email,
           email: u.email,
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
-          plan: 'free'
+          plan: userPlanFromDB
         }
         setUser(newUser)
         setShowAuthModal(false)
-        // Reset letter count per account using email as key
+        // Load letter count per account
         const userKey = 'cb_usage_' + u.email
         const month = new Date().toISOString().slice(0,7)
         const saved = JSON.parse(localStorage.getItem(userKey)||'{}')
@@ -811,18 +835,29 @@ export default function App() {
       }
     })
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const u = session.user
+        // Load plan from Supabase
+        let userPlanFromDB = 'free'
+        try {
+          const { data: sub } = await supabase
+            .from('subscriptions')
+            .select('plan, expires_at, status')
+            .eq('email', u.email)
+            .single()
+          if (sub && sub.status === 'active' && new Date(sub.expires_at) > new Date()) {
+            userPlanFromDB = sub.plan
+          }
+        } catch(e) {}
         const newUser = {
           name: u.user_metadata?.full_name || u.email,
           email: u.email,
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
-          plan: 'free'
+          plan: userPlanFromDB
         }
         setUser(newUser)
         setShowAuthModal(false)
-        // Reset letter count per account
         const userKey = 'cb_usage_' + u.email
         const month = new Date().toISOString().slice(0,7)
         const saved = JSON.parse(localStorage.getItem(userKey)||'{}')
