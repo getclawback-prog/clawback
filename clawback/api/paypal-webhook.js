@@ -5,6 +5,37 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 )
 
+const EMAILJS_SERVICE_ID = 'service_766pdfq'
+const EMAILJS_TEMPLATE_ID = 'template_9ek8vp9'
+const EMAILJS_PUBLIC_KEY = '6-zCJMjbPblCneoR4'
+
+async function sendWelcomeEmail(email, name, plan) {
+  const features = plan === 'pro'
+    ? '✓ Unlimited letters\n✓ PDF download\n✓ Phone script generator\n✓ Follow-up escalation letter\n✓ BBB complaint template\n✓ Small claims court guide\n✓ Priority email support'
+    : '✓ Unlimited letters\n✓ PDF download\n✓ Phone script generator\n✓ Follow-up escalation letter'
+
+  try {
+    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        template_params: {
+          to_email: email,
+          name: name || email.split('@')[0],
+          plan: plan.charAt(0).toUpperCase() + plan.slice(1),
+          features,
+        }
+      })
+    })
+    console.log('Email sent:', res.status)
+  } catch(e) {
+    console.log('Email error:', e.message)
+  }
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -16,25 +47,22 @@ module.exports = async function handler(req, res) {
 
     console.log('PayPal webhook received:', eventType)
 
-    // Subscription activated — user just paid
     if (eventType === 'BILLING.SUBSCRIPTION.ACTIVATED') {
       const subscriptionId = resource.id
       const planId = resource.plan_id
       const subscriberEmail = resource.subscriber?.email_address
+      const subscriberName = resource.subscriber?.name?.given_name || ''
 
-      // Determine plan name from plan ID
       let plan = 'free'
       if (planId === 'P-7WY25743FR981970CNHXA6YA') plan = 'starter'
       if (planId === 'P-3ST50384YB0447319NHXCFHA') plan = 'starter'
       if (planId === 'P-7G147704T62286325NHXCHAQ') plan = 'pro'
       if (planId === 'P-04S201706U470614GNHXCH6A') plan = 'pro'
 
-      // Calculate expiry — 31 days for monthly, 366 for yearly
       const isYearly = planId === 'P-3ST50384YB0447319NHXCFHA' || planId === 'P-04S201706U470614GNHXCH6A'
       const days = isYearly ? 366 : 31
       const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
 
-      // Save to subscriptions table
       await supabase.from('subscriptions').upsert({
         email: subscriberEmail,
         plan,
@@ -43,16 +71,16 @@ module.exports = async function handler(req, res) {
         status: 'active'
       }, { onConflict: 'email' })
 
-      // Update profiles table
       await supabase.from('profiles').upsert({
         email: subscriberEmail,
         plan
       }, { onConflict: 'email' })
 
-      console.log(`Activated ${plan} for ${subscriberEmail} until ${expiresAt}`)
+      await sendWelcomeEmail(subscriberEmail, subscriberName, plan)
+
+      console.log(`Activated ${plan} for ${subscriberEmail}`)
     }
 
-    // Subscription cancelled or expired — downgrade to free
     if (
       eventType === 'BILLING.SUBSCRIPTION.CANCELLED' ||
       eventType === 'BILLING.SUBSCRIPTION.EXPIRED' ||
@@ -61,7 +89,6 @@ module.exports = async function handler(req, res) {
       const subscriptionId = resource.id
       const subscriberEmail = resource.subscriber?.email_address
 
-      // Update subscriptions table
       await supabase.from('subscriptions').upsert({
         email: subscriberEmail,
         plan: 'free',
@@ -70,20 +97,12 @@ module.exports = async function handler(req, res) {
         status: 'cancelled'
       }, { onConflict: 'email' })
 
-      // Downgrade profiles table to free
       await supabase.from('profiles').upsert({
         email: subscriberEmail,
         plan: 'free'
       }, { onConflict: 'email' })
 
-      console.log(`Downgraded ${subscriberEmail} to free plan`)
-    }
-
-    // Payment failed — suspend after retry period
-    if (eventType === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') {
-      const subscriberEmail = resource.subscriber?.email_address
-      console.log(`Payment failed for ${subscriberEmail}`)
-      // PayPal will retry automatically — we wait for SUSPENDED event
+      console.log(`Downgraded ${subscriberEmail} to free`)
     }
 
     return res.status(200).json({ received: true })
