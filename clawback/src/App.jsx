@@ -789,7 +789,7 @@ export default function App() {
   useEffect(() => {
     if (!supabase) return
     // Check if user already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase profiles table
