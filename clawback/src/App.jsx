@@ -1484,14 +1484,20 @@ export default function App() {
                     ))}
                   </ul>
                   {p.isFree ? (
-                    <button className="plan-btn plan-btn-outline" onClick={()=>{setTestPlan('free');setScreen('form')}}>
+                    <button className="plan-btn plan-btn-outline" onClick={()=>{
+                      if(!user){setShowAuthModal(true)}
+                      else{setTestPlan('free');setScreen('form')}
+                    }}>
                       Start Free — No Card Needed
                     </button>
                   ) : TESTING_MODE ? (
-                    <button className={`plan-btn ${p.highlight?'plan-btn-primary':'plan-btn-outline'}`} onClick={()=>{setTestPlan(p.name.toLowerCase());setScreen('form')}}>
+                    <button className={`plan-btn ${p.highlight?'plan-btn-primary':'plan-btn-outline'}`} onClick={()=>{
+                      if(!user){setShowAuthModal(true)}
+                      else{setTestPlan(p.name.toLowerCase());setScreen('form')}
+                    }}>
                       {p.cta} — {billing==='yearly' ? p.yearlyTotal+'/yr' : p.price+'/mo'} →
                     </button>
-                  ) : (
+                  ) : user ? (
                     <a
                       href={billing==='yearly' ? p.paypalYearly() : p.paypalMonthly()}
                       target="_blank" rel="noreferrer"
@@ -1499,6 +1505,13 @@ export default function App() {
                     >
                       {p.cta} — {billing==='yearly' ? p.yearlyTotal+'/yr' : p.price+'/mo'} →
                     </a>
+                  ) : (
+                    <button
+                      className={`plan-btn ${p.highlight?'plan-btn-primary':'plan-btn-outline'}`}
+                      onClick={()=>setShowAuthModal(true)}
+                    >
+                      Sign In to {p.cta} →
+                    </button>
                   )}
                 </div>
               ))}
@@ -1520,7 +1533,17 @@ export default function App() {
         </>)}
 
         {/* FORM */}
-        {screen==='form' && (<>
+        {screen==='form' && !user && (
+          <div style={{textAlign:'center',padding:'80px 20px'}}>
+            <div style={{fontSize:48,marginBottom:20}}>⚖️</div>
+            <h2 style={{fontSize:24,fontWeight:800,color:'var(--text)',marginBottom:12}}>Sign in to continue</h2>
+            <p style={{color:'var(--muted)',marginBottom:28,fontSize:15}}>Create a free account to generate your dispute letter.</p>
+            <button className="btn-main" style={{margin:'0 auto'}} onClick={()=>setShowAuthModal(true)}>
+              Sign In / Sign Up — Free
+            </button>
+          </div>
+        )}
+        {screen==='form' && user && (<>
           <button className="back" onClick={reset}>← Back to home</button>
           <div className="form-wrap">
             <div style={{marginBottom:24,textAlign:'center'}}>
@@ -1773,7 +1796,7 @@ export default function App() {
               Continue with Google
             </button>
             <button className="modal-skip" onClick={()=>setShowAuthModal(false)}>
-              Skip for now — continue without signing up
+              Maybe later — browse only
             </button>
           </div>
         </div>
