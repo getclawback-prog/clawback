@@ -1527,7 +1527,7 @@ export default function App() {
           {/* FINAL CTA */}
           <section style={{padding:'64px 0',textAlign:'center',borderTop:'1px solid var(--border)'}}>
             <h2 style={{fontSize:'clamp(26px,4vw,46px)',fontWeight:800,letterSpacing:'-1.5px',color:'var(--text)',marginBottom:14}}>Ready to fight back?</h2>
-            <p style={{fontSize:16,color:'var(--muted)',marginBottom:32,maxWidth:380,margin:'0 auto 32px'}}>Generate your first letter free. No signup required.</p>
+            <p style={{fontSize:16,color:'var(--muted)',marginBottom:32,maxWidth:380,margin:'0 auto 32px'}}>Generate your first letter free.</p>
             <button className="btn-main" style={{margin:'0 auto'}} onClick={()=>{ if(!user){setShowAuthModal(true)} else {setScreen('form')} }}>Generate My Letter — Free ⚡</button>
           </section>
         </>)}
