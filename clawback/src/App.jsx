@@ -8,10 +8,10 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 
 // ── PayPal IDs (SET TO FREE FOR TESTING — swap back after testing) ───
 const TESTING_MODE = false // LIVE — plans are paid
-const PAYPAL_STARTER_MONTHLY = 'YOUR_STARTER_MONTHLY_PLAN_ID'
-const PAYPAL_STARTER_YEARLY  = 'YOUR_STARTER_YEARLY_PLAN_ID'
-const PAYPAL_PRO_MONTHLY     = 'YOUR_PRO_MONTHLY_PLAN_ID'
-const PAYPAL_PRO_YEARLY      = 'YOUR_PRO_YEARLY_PLAN_ID'
+const PAYPAL_STARTER_MONTHLY = 'P-7WY25743FR981970CNHXA6YA'
+const PAYPAL_STARTER_YEARLY  = 'P-3ST50384YB0447319NHXCFHA'
+const PAYPAL_PRO_MONTHLY     = 'P-7G147704T62286325NHXCHAQ'
+const PAYPAL_PRO_YEARLY      = 'P-04S201706U470614GNHXCH6A'
 
 // ── Data ─────────────────────────────────────────────────────────────
 const DISPUTE_TYPES = [
