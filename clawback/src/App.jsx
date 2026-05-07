@@ -819,7 +819,7 @@ export default function App() {
         // AUTO-CREATE profile row if it doesn't exist yet (new Google sign-in)
         try {
           await supabase.from('profiles').upsert(
-            { email: u.email, plan: userPlanFromDB },
+            { user_id: u.id, email: u.email, plan: userPlanFromDB },
             { onConflict: 'email', ignoreDuplicates: true }
           )
         } catch(e) { console.log('Profile upsert error:', e) }
@@ -862,7 +862,7 @@ export default function App() {
         // AUTO-CREATE profile row if it doesn't exist yet (new Google sign-in)
         try {
           await supabase.from('profiles').upsert(
-            { email: u.email, plan: userPlanFromDB },
+            { user_id: u.id, email: u.email, plan: userPlanFromDB },
             { onConflict: 'email', ignoreDuplicates: true }
           )
         } catch(e) { console.log('Profile upsert error:', e) }
