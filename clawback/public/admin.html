@@ -328,6 +328,65 @@
     }
     .refresh-btn:hover { background: rgba(108,71,255,0.25); }
     .last-updated { font-size: 12px; color: #475569; }
+
+    /* ── MOBILE RESPONSIVE ── */
+    @media (max-width: 640px) {
+
+      /* Topbar — stack logo + controls */
+      .topbar {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .topbar .logo { gap: 7px; }
+      .logo-text { font-size: 18px; }
+      .topbar-right {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .badge-admin { font-size: 11px; padding: 3px 9px; }
+      .last-updated { display: none; }
+      .refresh-btn  { font-size: 12px; padding: 7px 11px; }
+      .btn-logout   { font-size: 12px; padding: 7px 11px; }
+
+      /* Main padding */
+      .main { padding: 16px; }
+      .section-title { margin-bottom: 10px; }
+
+      /* Stats — 2 per row on mobile */
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .stat-card { padding: 16px 14px; border-radius: 12px; }
+      .stat-card .value { font-size: 28px; }
+      .stat-card .label { font-size: 10px; margin-bottom: 6px; }
+      .stat-card .sub   { font-size: 11px; }
+
+      /* MRR */
+      .mrr-card { padding: 18px; margin-bottom: 20px; }
+      .mrr-card .mrr-value { font-size: 36px; }
+      .mrr-card .mrr-label { font-size: 12px; }
+
+      /* Plan bar */
+      .plan-bar-wrap { padding: 16px; margin-bottom: 20px; }
+      .plan-bar-labels { font-size: 11px; }
+
+      /* Tables — horizontal scroll */
+      .table-card { margin-bottom: 20px; border-radius: 12px; }
+      .table-header { padding: 14px 16px; }
+      .table-header h3 { font-size: 14px; }
+      .table-header .count { font-size: 12px; }
+      .table-card > div { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      table { min-width: 480px; font-size: 12px; }
+      thead th { padding: 10px 14px; font-size: 10px; }
+      tbody td { padding: 12px 14px; }
+
+      /* Login card */
+      .login-card { padding: 32px 20px; }
+    }
   </style>
 </head>
 <body>
@@ -474,10 +533,10 @@
   // ── CONFIG — fill in your values ──────────────────────────────────────
   // These are the same values as VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env.local
   const SUPABASE_URL  = 'https://wuagveewhbtjzifodmsr.supabase.co'
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1YWd2ZWV3aGJ0anppZm9kbXNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3NDA2MTYsImV4cCI6MjA5MjMxNjYxNn0.-mRSQmexnWVGV5jff8lEkqJKDK1Uet0dmtAnSvbYCbc'
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1YWd2ZWV3aGJ0anppZm9kbXNyIiwicm9sZSI6ImFub24iLCJpYXQiOj'
 
   // Admin password — change this to something strong
-  const ADMIN_PASSWORD = 'clawback.b2c/999'
+  const ADMIN_PASSWORD = 'clawback.b2c/999/2026'
   // ─────────────────────────────────────────────────────────────────────
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
