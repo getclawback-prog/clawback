@@ -536,6 +536,11 @@
 
     } catch(e) {
       console.error('Load error:', e)
+      const errHTML = '<div class="loading" style="color:#f87171">&#9888; Error: ' + (e.message || String(e)) + '<br><br>Check your SUPABASE_URL and SUPABASE_ANON key in this file.</div>'
+      document.getElementById('subs-table-wrap').innerHTML = errHTML
+      document.getElementById('users-table-wrap').innerHTML = errHTML
+      document.getElementById('sub-count').textContent = 'Error'
+      document.getElementById('user-count').textContent = 'Error'
     }
   }
 

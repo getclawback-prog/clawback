@@ -820,7 +820,7 @@ export default function App() {
         try {
           await supabase.from('profiles').upsert(
             { user_id: u.id, email: u.email, plan: userPlanFromDB },
-            { onConflict: 'email', ignoreDuplicates: true }
+            { onConflict: 'user_id' }
           )
         } catch(e) { console.log('Profile upsert error:', e) }
 
@@ -863,7 +863,7 @@ export default function App() {
         try {
           await supabase.from('profiles').upsert(
             { user_id: u.id, email: u.email, plan: userPlanFromDB },
-            { onConflict: 'email', ignoreDuplicates: true }
+            { onConflict: 'user_id' }
           )
         } catch(e) { console.log('Profile upsert error:', e) }
 
