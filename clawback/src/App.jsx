@@ -816,6 +816,14 @@ export default function App() {
           }
         } catch(e) { console.log('Profile load error:', e) }
 
+        // AUTO-CREATE profile row if it doesn't exist yet (new Google sign-in)
+        try {
+          await supabase.from('profiles').upsert(
+            { email: u.email, plan: userPlanFromDB },
+            { onConflict: 'email', ignoreDuplicates: true }
+          )
+        } catch(e) { console.log('Profile upsert error:', e) }
+
         const newUser = {
           name: u.user_metadata?.full_name || u.email,
           email: u.email,
@@ -850,6 +858,15 @@ export default function App() {
             userPlanFromDB = sub.plan
           }
         } catch(e) {}
+
+        // AUTO-CREATE profile row if it doesn't exist yet (new Google sign-in)
+        try {
+          await supabase.from('profiles').upsert(
+            { email: u.email, plan: userPlanFromDB },
+            { onConflict: 'email', ignoreDuplicates: true }
+          )
+        } catch(e) { console.log('Profile upsert error:', e) }
+
         const newUser = {
           name: u.user_metadata?.full_name || u.email,
           email: u.email,
