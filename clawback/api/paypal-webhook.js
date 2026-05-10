@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+const { createClient } = require('@supabase/supabase-js')
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -36,7 +36,7 @@ async function sendWelcomeEmail(email, name, plan) {
   }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
 
       await sendWelcomeEmail(subscriberEmail, subscriberName, plan)
 
-      console.log(`Activated ${plan} for ${subscriberEmail}`)
+      console.log('Activated ' + plan + ' for ' + subscriberEmail)
     }
 
     if (
@@ -102,7 +102,7 @@ export default async function handler(req, res) {
         .update({ plan: 'free' })
         .eq('email', subscriberEmail)
 
-      console.log(`Downgraded ${subscriberEmail} to free`)
+      console.log('Downgraded ' + subscriberEmail + ' to free')
     }
 
     return res.status(200).json({ received: true })
