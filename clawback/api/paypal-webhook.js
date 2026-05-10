@@ -71,10 +71,10 @@ module.exports = async function handler(req, res) {
         status: 'active'
       }, { onConflict: 'email' })
 
-      await supabase.from('profiles').upsert({
-        email: subscriberEmail,
-        plan
-      }, { onConflict: 'email' })
+      // Use update (not upsert) — profile row already exists from sign-in
+      await supabase.from('profiles')
+        .update({ plan })
+        .eq('email', subscriberEmail)
 
       await sendWelcomeEmail(subscriberEmail, subscriberName, plan)
 
@@ -97,10 +97,10 @@ module.exports = async function handler(req, res) {
         status: 'cancelled'
       }, { onConflict: 'email' })
 
-      await supabase.from('profiles').upsert({
-        email: subscriberEmail,
-        plan: 'free'
-      }, { onConflict: 'email' })
+      // Use update (not upsert) — profile row already exists
+      await supabase.from('profiles')
+        .update({ plan: 'free' })
+        .eq('email', subscriberEmail)
 
       console.log(`Downgraded ${subscriberEmail} to free`)
     }
