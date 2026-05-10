@@ -8,9 +8,9 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 
 // ── PayPal IDs (SET TO FREE FOR TESTING — swap back after testing) ───
 const TESTING_MODE = false // LIVE — plans are paid
-const PAYPAL_STARTER_MONTHLY = 'P-7WY25743FR981970CNHXA6YA'
-const PAYPAL_STARTER_YEARLY  = 'P-3ST50384YB0447319NHXCFHA'
-const PAYPAL_PRO_MONTHLY     = 'P-7G147704T62286325NHXCHAQ'
+const PAYPAL_STARTER_MONTHLY = 'P-12033585TE841814UNIAAUAA'
+const PAYPAL_STARTER_YEARLY  = 'P-42640058UL843601DNIAAWGI'
+const PAYPAL_PRO_MONTHLY     = 'P-0PA781130S622624PNIAAX2Q'
 const PAYPAL_PRO_YEARLY      = 'P-04S201706U470614GNHXCH6A'
 
 // ── Data ─────────────────────────────────────────────────────────────
