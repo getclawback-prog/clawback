@@ -573,18 +573,20 @@
   async function loadData() {
     try {
       // Fetch profiles
-      const { data: profiles, error: pErr } = await sb
+      const { data: profilesRaw, error: pErr } = await sb
         .from('profiles')
         .select('email, plan, letters_used, month')
         .order('email')
       if (pErr) throw pErr
+      const profiles = profilesRaw || []
 
       // Fetch subscriptions
-      const { data: subs, error: sErr } = await sb
+      const { data: subsRaw, error: sErr } = await sb
         .from('subscriptions')
         .select('email, plan, paypal_subscription_id, expires_at, status')
         .order('expires_at', { ascending: false })
       if (sErr) throw sErr
+      const subs = subsRaw || []
 
       renderStats(profiles, subs)
       renderSubsTable(subs)

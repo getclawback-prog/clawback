@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js')
+import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -11,8 +11,8 @@ const EMAILJS_PUBLIC_KEY = '6-zCJMjbPblCneoR4'
 
 async function sendWelcomeEmail(email, name, plan) {
   const features = plan === 'pro'
-    ? '✓ Unlimited letters\n✓ PDF download\n✓ Phone script generator\n✓ Follow-up escalation letter\n✓ BBB complaint template\n✓ Small claims court guide\n✓ Priority email support'
-    : '✓ Unlimited letters\n✓ PDF download\n✓ Phone script generator\n✓ Follow-up escalation letter'
+    ? '\u2713 Unlimited letters\n\u2713 PDF download\n\u2713 Phone script generator\n\u2713 Follow-up escalation letter\n\u2713 BBB complaint template\n\u2713 Small claims court guide\n\u2713 Priority email support'
+    : '\u2713 Unlimited letters\n\u2713 PDF download\n\u2713 Phone script generator\n\u2713 Follow-up escalation letter'
 
   try {
     const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
@@ -36,7 +36,7 @@ async function sendWelcomeEmail(email, name, plan) {
   }
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -54,12 +54,12 @@ module.exports = async function handler(req, res) {
       const subscriberName = resource.subscriber?.name?.given_name || ''
 
       let plan = 'free'
-      if (planId === 'P-7WY25743FR981970CNHXA6YA') plan = 'starter'
-      if (planId === 'P-3ST50384YB0447319NHXCFHA') plan = 'starter'
-      if (planId === 'P-7G147704T62286325NHXCHAQ') plan = 'pro'
-      if (planId === 'P-04S201706U470614GNHXCH6A') plan = 'pro'
+      if (planId === 'P-12033585TE841814UNIAAUAA') plan = 'starter' // Starter Monthly $9
+      if (planId === 'P-42640058UL843601DNIAAWGI') plan = 'starter' // Starter Yearly $79
+      if (planId === 'P-0PA781130S622624PNIAAX2Q') plan = 'pro'     // Pro Monthly $19
+      if (planId === 'P-04S201706U470614GNHXCH6A') plan = 'pro'     // Pro Yearly $149
 
-      const isYearly = planId === 'P-3ST50384YB0447319NHXCFHA' || planId === 'P-04S201706U470614GNHXCH6A'
+      const isYearly = planId === 'P-42640058UL843601DNIAAWGI' || planId === 'P-04S201706U470614GNHXCH6A'
       const days = isYearly ? 366 : 31
       const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
 
