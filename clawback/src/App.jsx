@@ -763,6 +763,7 @@ export default function App() {
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
+
   // Sync letter count across tabs instantly
   useEffect(() => {
     function handleStorageChange(e) {
@@ -800,8 +801,16 @@ export default function App() {
             .select('plan')
             .eq('email', u.email)
             .single()
-          if (profile?.plan) userPlanFromDB = profile.plan
-          // Check subscription expiry
+          if (profile?.plan) {
+            // Existing user — use their saved plan, never overwrite it
+            userPlanFromDB = profile.plan
+          } else {
+            // Brand new user — create profile row once with free plan
+            await supabase.from('profiles').insert(
+              { user_id: u.id, email: u.email, plan: 'free' }
+            )
+          }
+          // Check subscription — only override if active PayPal sub exists
           const { data: sub } = await supabase
             .from('subscriptions')
             .select('plan, expires_at, status')
@@ -810,19 +819,11 @@ export default function App() {
           if (sub && sub.status === 'active' && new Date(sub.expires_at) > new Date()) {
             userPlanFromDB = sub.plan
           } else if (sub && new Date(sub.expires_at) < new Date()) {
-            // Subscription expired — force free
+            // Subscription expired — downgrade in DB
             userPlanFromDB = 'free'
-            await supabase.from('profiles').upsert({ email: u.email, plan: 'free' }, { onConflict: 'email' })
+            await supabase.from('profiles').update({ plan: 'free' }).eq('email', u.email)
           }
         } catch(e) { console.log('Profile load error:', e) }
-
-        // AUTO-CREATE profile row if it doesn't exist yet (new Google sign-in)
-        try {
-          await supabase.from('profiles').upsert(
-            { user_id: u.id, email: u.email, plan: userPlanFromDB },
-            { onConflict: 'user_id' }
-          )
-        } catch(e) { console.log('Profile upsert error:', e) }
 
         const newUser = {
           name: u.user_metadata?.full_name || u.email,
@@ -849,6 +850,21 @@ export default function App() {
         // Load plan from Supabase
         let userPlanFromDB = 'free'
         try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('email', u.email)
+            .single()
+          if (profile?.plan) {
+            // Existing user — trust their saved plan, never overwrite
+            userPlanFromDB = profile.plan
+          } else {
+            // Brand new user — create profile row once
+            await supabase.from('profiles').insert(
+              { user_id: u.id, email: u.email, plan: 'free' }
+            )
+          }
+          // Only override if active PayPal subscription exists
           const { data: sub } = await supabase
             .from('subscriptions')
             .select('plan, expires_at, status')
@@ -858,14 +874,6 @@ export default function App() {
             userPlanFromDB = sub.plan
           }
         } catch(e) {}
-
-        // AUTO-CREATE profile row if it doesn't exist yet (new Google sign-in)
-        try {
-          await supabase.from('profiles').upsert(
-            { user_id: u.id, email: u.email, plan: userPlanFromDB },
-            { onConflict: 'user_id' }
-          )
-        } catch(e) { console.log('Profile upsert error:', e) }
 
         const newUser = {
           name: u.user_metadata?.full_name || u.email,
