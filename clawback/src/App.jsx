@@ -49,7 +49,7 @@ const PLANS = [
     isFree:true,
   },
   {
-    name:'Starter', price:'$5', yearlyPrice:'$4.17', yearlyTotal:'$50', period:'per month',
+    name:'Starter', price:'$9', yearlyPrice:'$6.58', yearlyTotal:'$79', period:'per month',
     desc:'For active disputes',
     features:['Unlimited letters','PDF download','Phone script generator','Follow-up escalation letter','9 dispute types','All 4 countries'],
     locked:['BBB complaint template','Small claims guide'],
@@ -58,7 +58,7 @@ const PLANS = [
     paypalYearly:()=>`https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=${PAYPAL_STARTER_YEARLY}`,
   },
   {
-    name:'Pro', price:'$15', yearlyPrice:'$12.42', yearlyTotal:'$149', period:'per month',
+    name:'Pro', price:'$19', yearlyPrice:'$12.42', yearlyTotal:'$149', period:'per month',
     badge:'Best Value',
     desc:'Maximum results',
     features:['Everything in Starter','BBB complaint template','Small claims court guide','Priority email support','New templates first','Success tips per case'],
@@ -1469,7 +1469,7 @@ export default function App() {
               <span className={`tog-label ${billing==='monthly'?'active':''}`}>Monthly</span>
               <button className={`tog-switch ${billing==='yearly'?'yearly':''}`} onClick={()=>setBilling(b=>b==='monthly'?'yearly':'monthly')}/>
               <span className={`tog-label ${billing==='yearly'?'active':''}`}>Yearly</span>
-              {billing==='yearly' && <span className="save-pill">Save 17%</span>}
+              {billing==='yearly' && <span className="save-pill">Save up to 35%</span>}
             </div>
 
             {/* Testing mode bar hidden for recording */}
@@ -1489,7 +1489,7 @@ export default function App() {
                     {/* test badge hidden */}
                   </div>
                   {billing==='yearly' && p.yearlyTotal && !TESTING_MODE && !p.isFree && (
-                    <div className="plan-yearly-note">{p.yearlyTotal}/year · save 17%</div>
+                    <div className="plan-yearly-note">{p.yearlyTotal}/year · best value</div>
                   )}
                   <div className="plan-desc">{p.desc}</div>
                   <ul className="plan-feats">
