@@ -768,6 +768,7 @@ export default function App() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showReminder, setShowReminder] = useState(false)
   const [reminderCompany, setReminderCompany] = useState('')
+  const [authLoading, setAuthLoading] = useState(true)
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
@@ -850,6 +851,8 @@ export default function App() {
         setLetterCount(count)
         if (disputeType) setScreen('form')
       }
+      // Always mark auth check as complete — signed in or not
+      setAuthLoading(false)
     })
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -1051,6 +1054,26 @@ export default function App() {
   }
 
   const cardStyle = { background:'rgba(255,255,255,0.05)', border:'1px solid rgba(108,71,255,0.2)', borderRadius:16, backdropFilter:'blur(4px)' }
+
+  // Show blank screen while checking auth — prevents flash of signed-out state
+  if (authLoading) return (
+    <div style={{
+      minHeight:'100vh',
+      background:'#0a0618',
+      display:'flex',
+      alignItems:'center',
+      justifyContent:'center'
+    }}>
+      <div style={{
+        width:36,height:36,
+        border:'3px solid rgba(108,71,255,0.2)',
+        borderTop:'3px solid #6c47ff',
+        borderRadius:'50%',
+        animation:'spin 0.8s linear infinite'
+      }}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  )
 
   return (
     <>
