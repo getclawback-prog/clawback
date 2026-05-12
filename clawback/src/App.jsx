@@ -760,6 +760,8 @@ export default function App() {
   const [testPlan, setTestPlan] = useState('free') // free by default
   const [showTestSwitcher, setShowTestSwitcher] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showReminder, setShowReminder] = useState(false)
+  const [reminderCompany, setReminderCompany] = useState('')
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
@@ -844,7 +846,7 @@ export default function App() {
       }
     })
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase
@@ -890,9 +892,10 @@ export default function App() {
         localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
         setLetterCount(count)
         if (disputeType) setScreen('form')
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null)
       }
+      // For TOKEN_REFRESHED or other events — keep current user state
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -910,6 +913,21 @@ export default function App() {
     const t = setInterval(() => setWordIdx(p=>(p+1)%words.length), 2400)
     return () => clearInterval(t)
   }, [])
+
+  // Check 30-day follow-up reminder for paid users
+  useEffect(() => {
+    if (!user || userPlan === 'free') return
+    try {
+      const reminderKey = 'cb_reminder_' + user.email
+      const data = JSON.parse(localStorage.getItem(reminderKey) || 'null')
+      if (data && !data.sent && new Date(data.reminderDate) <= new Date()) {
+        setReminderCompany(data.company || 'your dispute')
+        setShowReminder(true)
+        // Mark as sent so it doesn't show again
+        localStorage.setItem(reminderKey, JSON.stringify({...data, sent: true}))
+      }
+    } catch(e) {}
+  }, [user])
 
   async function handleGoogleSignIn() {
     if (supabase) {
@@ -1001,6 +1019,22 @@ export default function App() {
     setLetter('')
     setDisputeType(null)
     setForm({ company:'',amount:'',description:'',desired:'',tone:'firm',yourName:'',city:'',country:'US' })
+    // Schedule 30-day follow-up reminder if user is signed in and on paid plan
+    if (user && userPlan !== 'free') {
+      try {
+        const reminderKey = 'cb_reminder_' + user.email
+        const existing = localStorage.getItem(reminderKey)
+        if (!existing) {
+          const reminderDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          localStorage.setItem(reminderKey, JSON.stringify({
+            email: user.email,
+            company: form.company,
+            reminderDate,
+            sent: false
+          }))
+        }
+      } catch(e) {}
+    }
     window.scrollTo(0,0)
   }
 
@@ -1241,6 +1275,8 @@ export default function App() {
         .tone-btn{background:rgba(255,255,255,.05);border:1.5px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;text-align:left;color:var(--text);transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif}
         .tone-btn:hover{border-color:var(--accent3);background:rgba(108,71,255,.08)}
         .tone-btn.selected{border-color:var(--accent);background:rgba(108,71,255,.12)}
+        .tone-btn.tone-locked{opacity:.55;cursor:pointer;border-style:dashed}
+        .tone-btn.tone-locked:hover{border-color:#f59e0b;background:rgba(245,158,11,.06)}
         .tone-name{font-size:13px;font-weight:700;display:block;margin-bottom:4px;color:#fff}
         .tone-small{font-size:11px;color:var(--muted);line-height:1.4}
         .gen-btn{width:100%;padding:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:700;cursor:pointer;transition:all .25s;margin-top:24px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 28px rgba(108,71,255,.4)}
@@ -1629,25 +1665,39 @@ export default function App() {
                 <div>
                   <div style={{fontSize:11,fontWeight:700,letterSpacing:'.1em',textTransform:'uppercase',color:'var(--muted)',marginBottom:8}}>Letter Tone</div>
                   <div className="tone-grid">
-                    {TONES.map(t=>(
-                      <button key={t.id} className={`tone-btn ${form.tone===t.id?'selected':''}`} onClick={()=>setForm({...form,tone:t.id})}>
-                        <span className="tone-name">{t.label}</span>
-                        <span className="tone-small">{t.desc}</span>
-                      </button>
-                    ))}
+                    {TONES.map(t=>{
+                      const isLocked = userPlan==='free' && (t.id==='urgent'||t.id==='final')
+                      return (
+                        <button key={t.id}
+                          className={`tone-btn ${form.tone===t.id?'selected':''} ${isLocked?'tone-locked':''}`}
+                          onClick={()=>{
+                            if(isLocked){reset();setTimeout(()=>document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'}),100);return}
+                            setForm({...form,tone:t.id})
+                          }}
+                          title={isLocked?'Upgrade to unlock this tone':''}
+                        >
+                          <span className="tone-name">{isLocked?'🔒 ':''}{t.label}</span>
+                          <span className="tone-small">{isLocked?'Paid plan only':t.desc}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
                 {!canGenerate ? (
-                  <div className="limit-warn">
-                    <span style={{fontSize:20}}>⚠️</span>
-                    <div>
-                      <p><strong>You have used your 2 free letters this month.</strong><br/>
-                      Upgrade to Starter or Pro for unlimited letters, PDF, phone scripts and more.</p>
-                      <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
-                        <button className="nav-btn nav-solid" style={{padding:'8px 16px',fontSize:13}}
+                  <div className="limit-warn" style={{background:'rgba(245,80,40,.08)',border:'1px solid rgba(245,80,40,.3)',borderRadius:14,padding:'20px 22px'}}>
+                    <span style={{fontSize:24}}>🚨</span>
+                    <div style={{flex:1}}>
+                      <p style={{fontWeight:800,fontSize:15,color:'#f87171',marginBottom:4}}>Don't let your dispute stall here.</p>
+                      <p style={{fontSize:13,color:'var(--text)',lineHeight:1.6}}>
+                        You've used your 2 free letters. If you're in the middle of an active dispute,
+                        stopping now gives the company exactly what they want.
+                        Upgrade to keep the pressure on — unlimited letters, follow-up escalation, phone script and more.
+                      </p>
+                      <div style={{display:'flex',gap:8,marginTop:12,flexWrap:'wrap'}}>
+                        <button className="nav-btn nav-solid" style={{padding:'10px 20px',fontSize:13,background:'linear-gradient(135deg,#ef4444,#dc2626)',borderColor:'transparent'}}
                           onClick={()=>{reset();setTimeout(()=>document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'}),100)}}>
-                          ⚡ Upgrade Plan →
+                          ⚡ Upgrade Now — Don't Stop →
                         </button>
                       </div>
                     </div>
@@ -1664,6 +1714,30 @@ export default function App() {
             </div>
           </div>
         </>)}
+
+        {/* 30-DAY FOLLOW-UP REMINDER BANNER */}
+        {showReminder && (
+          <div style={{background:'rgba(108,71,255,.12)',border:'1px solid rgba(108,71,255,.35)',borderRadius:14,padding:'16px 20px',margin:'0 0 20px',display:'flex',gap:14,alignItems:'flex-start'}}>
+            <span style={{fontSize:22}}>⏰</span>
+            <div style={{flex:1}}>
+              <p style={{fontWeight:800,fontSize:14,color:'var(--accent3)',marginBottom:4}}>30-day check-in: How did your dispute with {reminderCompany} go?</p>
+              <p style={{fontSize:13,color:'var(--text)',lineHeight:1.6}}>
+                If they haven't responded or refused your request — it's time to escalate.
+                A follow-up letter or BBB complaint dramatically increases your chances.
+              </p>
+              <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
+                <button className="nav-btn nav-solid" style={{padding:'8px 16px',fontSize:12}}
+                  onClick={()=>{setShowReminder(false);setScreen('form')}}>
+                  ✍️ Send Follow-up Letter
+                </button>
+                <button style={{padding:'8px 16px',fontSize:12,background:'transparent',border:'1px solid var(--border)',borderRadius:8,color:'var(--muted)',cursor:'pointer',fontFamily:'inherit'}}
+                  onClick={()=>setShowReminder(false)}>
+                  Resolved ✓
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* LOADING */}
         {screen==='loading' && (
