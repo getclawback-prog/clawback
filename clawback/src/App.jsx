@@ -756,7 +756,12 @@ export default function App() {
     // Instantly restore user from localStorage on load — no flash, no loading screen
     try {
       const saved = localStorage.getItem('cb_user')
-      return saved ? JSON.parse(saved) : null
+      if (saved) {
+        const u = JSON.parse(saved)
+        // Also restore letter count for this user immediately
+        return u
+      }
+      return null
     } catch(e) { return null }
   })
   const [disputeType, setDisputeType] = useState(null)
@@ -970,6 +975,7 @@ export default function App() {
 
   async function signOut() {
     if (supabase) await supabase.auth.signOut()
+    localStorage.removeItem('cb_user')
     setUser(null)
     setLetterCount(getLetterCount())
   }
