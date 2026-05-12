@@ -8,8 +8,7 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storageKey: 'clawback-auth-token'
+    detectSessionInUrl: true
   }
 }) : null
 
