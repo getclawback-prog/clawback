@@ -974,11 +974,10 @@ export default function App() {
   }
 
   async function signOut() {
-    setShowUserMenu(false)
-    try { if (supabase) await supabase.auth.signOut() } catch(e) {}
+    if (supabase) await supabase.auth.signOut()
     localStorage.removeItem('cb_user')
-    // Force full page reload — guaranteed clean signout
-    window.location.href = window.location.origin
+    setUser(null)
+    setLetterCount(getLetterCount())
   }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
@@ -1429,7 +1428,7 @@ export default function App() {
                       <button style={{width:'100%',padding:'9px 14px',background:'transparent',border:'none',color:'#f87171',fontSize:13,fontWeight:600,cursor:'pointer',textAlign:'left',borderRadius:8,fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
                         onMouseEnter={e=>e.currentTarget.style.background='rgba(248,113,113,.08)'}
                         onMouseLeave={e=>e.currentTarget.style.background='transparent'}
-                        onClick={async(e)=>{e.stopPropagation();setShowUserMenu(false);await signOut()}}>
+                        onClick={()=>{setShowUserMenu(false);signOut()}}>
                         → Sign Out
                       </button>
                     </div>
