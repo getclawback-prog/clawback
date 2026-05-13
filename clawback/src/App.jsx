@@ -810,6 +810,8 @@ export default function App() {
     if (!supabase) return
     // Check if user already logged in
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // If user explicitly signed out, don't auto-restore even if Google session exists
+      if (localStorage.getItem('cb_signed_out') === '1') return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase profiles table
@@ -850,6 +852,7 @@ export default function App() {
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
           plan: userPlanFromDB
         }
+        localStorage.removeItem('cb_signed_out')
         setUser(newUser)
         localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
@@ -865,6 +868,7 @@ export default function App() {
     })
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (localStorage.getItem('cb_signed_out') === '1' && event !== 'SIGNED_IN') return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase
@@ -901,6 +905,7 @@ export default function App() {
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
           plan: userPlanFromDB
         }
+        localStorage.removeItem('cb_signed_out')
         setUser(newUser)
         localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
@@ -976,6 +981,7 @@ export default function App() {
   async function signOut() {
     if (supabase) await supabase.auth.signOut()
     localStorage.removeItem('cb_user')
+    localStorage.setItem('cb_signed_out', '1')
     setUser(null)
     setLetterCount(getLetterCount())
   }
