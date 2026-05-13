@@ -1418,22 +1418,22 @@ export default function App() {
                 <div style={{position:'relative'}}>
                   <div className="user-av" onClick={()=>setShowUserMenu(m=>!m)}>{user.avatar}</div>
                   {showUserMenu && (
-                    <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'#13102b',border:'1px solid rgba(108,71,255,.25)',borderRadius:12,padding:8,minWidth:180,zIndex:999,boxShadow:'0 8px 32px rgba(0,0,0,.4)'}}>
+                    <div data-menu="true" style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'#13102b',border:'1px solid rgba(108,71,255,.25)',borderRadius:12,padding:8,minWidth:180,zIndex:999,boxShadow:'0 8px 32px rgba(0,0,0,.4)'}}>
                       <div style={{padding:'8px 14px',borderBottom:'1px solid rgba(108,71,255,.15)',marginBottom:6}}>
                         <div style={{fontSize:13,fontWeight:700,color:'#fff'}}>{user.name}</div>
                         <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{user.email}</div>
                         <div style={{fontSize:11,color:'var(--accent3)',marginTop:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em'}}>{userPlan} plan</div>
                       </div>
                       <button style={{width:'100%',padding:'9px 14px',background:'transparent',border:'none',color:'var(--text)',fontSize:13,fontWeight:600,cursor:'pointer',textAlign:'left',borderRadius:8,fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
-                        onMouseEnter={e=>e.target.style.background='rgba(108,71,255,.1)'}
-                        onMouseLeave={e=>e.target.style.background='transparent'}
+                        onMouseEnter={e=>e.currentTarget.style.background='rgba(108,71,255,.1)'}
+                        onMouseLeave={e=>e.currentTarget.style.background='transparent'}
                         onClick={()=>{setShowUserMenu(false);document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'})}}>
                         ⚡ Upgrade Plan
                       </button>
                       <button style={{width:'100%',padding:'9px 14px',background:'transparent',border:'none',color:'#f87171',fontSize:13,fontWeight:600,cursor:'pointer',textAlign:'left',borderRadius:8,fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
-                        onMouseEnter={e=>e.target.style.background='rgba(248,113,113,.08)'}
-                        onMouseLeave={e=>e.target.style.background='transparent'}
-                        onClick={()=>{setShowUserMenu(false);signOut()}}>
+                        onMouseEnter={e=>e.currentTarget.style.background='rgba(248,113,113,.08)'}
+                        onMouseLeave={e=>e.currentTarget.style.background='transparent'}
+                        onClick={async(e)=>{e.stopPropagation();setShowUserMenu(false);await signOut()}}>
                         → Sign Out
                       </button>
                     </div>
