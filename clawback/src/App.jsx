@@ -1398,7 +1398,7 @@ export default function App() {
                         <div style={{fontSize:11,color:'var(--muted)',marginTop:2}}>{user.email}</div>
                         <div style={{fontSize:11,color:'var(--accent3)',marginTop:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em'}}>{userPlan} plan</div>
                       </div>
-                      <button style={{width:'100%',padding:'9px 14px',background:'transparent',border:'none',color:'var(--text)',fontSize:13,fontWeight:600,cursor:'pointer',textAlign:'left',borderRadius:8,fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
+                      <button style={{width:'100%',padding:'9px 14px',background:'transparent',border:'none',color:'#6c47ff',fontSize:13,fontWeight:600,cursor:'pointer',textAlign:'left',borderRadius:8,fontFamily:'inherit',display:'flex',alignItems:'center',gap:8}}
                         onMouseEnter={e=>e.currentTarget.style.background='rgba(108,71,255,.1)'}
                         onMouseLeave={e=>e.currentTarget.style.background='transparent'}
                         onClick={()=>{setShowUserMenu(false);document.getElementById('pricing')?.scrollIntoView({behavior:'smooth'})}}>
