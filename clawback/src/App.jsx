@@ -29,8 +29,8 @@ const DISPUTE_TYPES = [
   { id:'subscription', icon:'📦', label:'Subscription Charged',       desc:'Billed after cancelling, auto-renewal' },
   { id:'contractor',   icon:'🔨', label:'Bad Contractor Work',        desc:'Work not done, overcharged, ignored' },
   { id:'employer',     icon:'💼', label:'Unpaid Wages',               desc:'Employer owes money, wrongful deduction' },
-  { id:'other',        icon:'⚖️', label:'Other Dispute',              desc:'Any consumer or business dispute' },
   { id:'credit',       icon:'📊', label:'Credit Report Error',         desc:'Wrong info, fraud, FCRA violation on credit report' },
+  { id:'other',        icon:'⚖️', label:'Other Dispute',              desc:'Any consumer or business dispute' },
 ]
 
 const TONES = [
@@ -755,14 +755,11 @@ ${form.yourName||'[YOUR NAME]'}`)
 export default function App() {
   const [screen, setScreen] = useState('home')
   const [user, setUser] = useState(() => {
-    // Instantly restore user from localStorage on load — no flash, no loading screen
     try {
+      // If user explicitly signed out, never restore from localStorage
+      if (localStorage.getItem('cb_signed_out') === '1') return null
       const saved = localStorage.getItem('cb_user')
-      if (saved) {
-        const u = JSON.parse(saved)
-        // Also restore letter count for this user immediately
-        return u
-      }
+      if (saved) return JSON.parse(saved)
       return null
     } catch(e) { return null }
   })
