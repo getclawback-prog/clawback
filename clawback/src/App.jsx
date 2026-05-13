@@ -30,6 +30,7 @@ const DISPUTE_TYPES = [
   { id:'contractor',   icon:'🔨', label:'Bad Contractor Work',        desc:'Work not done, overcharged, ignored' },
   { id:'employer',     icon:'💼', label:'Unpaid Wages',               desc:'Employer owes money, wrongful deduction' },
   { id:'other',        icon:'⚖️', label:'Other Dispute',              desc:'Any consumer or business dispute' },
+  { id:'credit',       icon:'📊', label:'Credit Report Error',         desc:'Wrong info, fraud, FCRA violation on credit report' },
 ]
 
 const TONES = [
@@ -49,7 +50,7 @@ const PLANS = [
   {
     name:'Free', price:'$0', period:'forever',
     desc:'Try Clawback risk-free',
-    features:['2 letters per month','9 dispute types','US, CA, AU, UK laws','Copy to clipboard'],
+    features:['2 letters per month','10 dispute types','US, CA, AU, UK laws','Copy to clipboard'],
     locked:['PDF download','Phone script','Follow-up letter'],
     cta:'Start Free', highlight:false,
     isFree:true,
@@ -57,7 +58,7 @@ const PLANS = [
   {
     name:'Starter', price:'$9', yearlyPrice:'$6.58', yearlyTotal:'$79', period:'per month',
     desc:'For active disputes',
-    features:['Unlimited letters','PDF download','Phone script generator','Follow-up escalation letter','9 dispute types','All 4 countries'],
+    features:['Unlimited letters','PDF download','Phone script generator','Follow-up escalation letter','10 dispute types','All 4 countries'],
     locked:['BBB complaint template','Small claims guide'],
     cta:'Get Starter', highlight:false,
     paypalMonthly:()=>`https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=${PAYPAL_STARTER_MONTHLY}`,
@@ -94,13 +95,14 @@ const TIPS = {
   contractor:   ['File with state contractor licensing board today','Get 2–3 independent repair estimates','Post honest reviews on Google and Yelp','Small Claims Court handles up to $25,000'],
   employer:     ['File wage claim with Department of Labor simultaneously','FLSA violations = up to double unpaid wages','Keep every pay stub, timesheet, employment contract','Local employment attorneys often offer free consultations'],
   other:        ['Send certified mail with return receipt','File with state Attorney General consumer division','Document everything — photos, emails, dates','Small Claims Court is affordable, no attorney needed'],
+  credit:       ['Send dispute letter to all 3 bureaus — Equifax, Experian, TransUnion','Bureaus must respond within 30 days or remove the item','Request free credit report at AnnualCreditReport.com','File CFPB complaint if bureau ignores your dispute'],
 }
 
 const LAWS = {
-  US:{ overcharge:'the Fair Credit Billing Act (15 U.S.C. § 1666)', refund:'the FTC Act and applicable state consumer protection statutes', deposit:'applicable state security deposit laws', insurance:'applicable state insurance regulations', airline:'DOT regulations (14 CFR Part 250)', subscription:"the FTC's Negative Option Rule", contractor:'applicable state contractor licensing laws', employer:'the Fair Labor Standards Act (FLSA)', other:'applicable federal and state consumer protection laws' },
-  CA:{ overcharge:'the Consumer Protection Act', refund:'the Consumer Protection Act', deposit:'applicable provincial residential tenancy legislation', insurance:'the Insurance Act', airline:'the Air Passenger Protection Regulations (SOR/2019-150)', subscription:'applicable provincial consumer protection legislation', contractor:'applicable provincial consumer protection legislation', employer:'the Canada Labour Code', other:'applicable federal and provincial consumer protection legislation' },
-  AU:{ overcharge:'the Australian Consumer Law (Competition and Consumer Act 2010)', refund:'the Australian Consumer Law consumer guarantee provisions', deposit:'applicable state residential tenancy legislation', insurance:'the Insurance Contracts Act 1984', airline:'the Australian Consumer Law', subscription:'the Australian Consumer Law', contractor:'the Australian Consumer Law', employer:'the Fair Work Act 2009', other:'the Australian Consumer Law' },
-  UK:{ overcharge:'the Consumer Rights Act 2015', refund:'the Consumer Rights Act 2015 and Consumer Contracts Regulations 2013', deposit:'the Housing Act 2004 and Tenancy Deposit Protection regulations', insurance:'the Insurance Act 2015', airline:'UK Regulation EC 261/2004', subscription:'the Consumer Contracts Regulations 2013', contractor:'the Consumer Rights Act 2015', employer:'the Employment Rights Act 1996', other:'the Consumer Rights Act 2015' },
+  US:{ credit:'the Fair Credit Reporting Act (FCRA, 15 U.S.C. § 1681)', overcharge:'the Fair Credit Billing Act (15 U.S.C. § 1666)', refund:'the FTC Act and applicable state consumer protection statutes', deposit:'applicable state security deposit laws', insurance:'applicable state insurance regulations', airline:'DOT regulations (14 CFR Part 250)', subscription:"the FTC's Negative Option Rule", contractor:'applicable state contractor licensing laws', employer:'the Fair Labor Standards Act (FLSA)', other:'applicable federal and state consumer protection laws' },
+  CA:{ credit:'the Consumer Reporting Act and applicable provincial credit reporting legislation', overcharge:'the Consumer Protection Act', refund:'the Consumer Protection Act', deposit:'applicable provincial residential tenancy legislation', insurance:'the Insurance Act', airline:'the Air Passenger Protection Regulations (SOR/2019-150)', subscription:'applicable provincial consumer protection legislation', contractor:'applicable provincial consumer protection legislation', employer:'the Canada Labour Code', other:'applicable federal and provincial consumer protection legislation' },
+  AU:{ credit:'the Privacy Act 1988 and the Australian Privacy Principles (Credit Reporting)', overcharge:'the Australian Consumer Law (Competition and Consumer Act 2010)', refund:'the Australian Consumer Law consumer guarantee provisions', deposit:'applicable state residential tenancy legislation', insurance:'the Insurance Contracts Act 1984', airline:'the Australian Consumer Law', subscription:'the Australian Consumer Law', contractor:'the Australian Consumer Law', employer:'the Fair Work Act 2009', other:'the Australian Consumer Law' },
+  UK:{ credit:'the UK GDPR and the Data Protection Act 2018 (credit file accuracy rights)', overcharge:'the Consumer Rights Act 2015', refund:'the Consumer Rights Act 2015 and Consumer Contracts Regulations 2013', deposit:'the Housing Act 2004 and Tenancy Deposit Protection regulations', insurance:'the Insurance Act 2015', airline:'UK Regulation EC 261/2004', subscription:'the Consumer Contracts Regulations 2013', contractor:'the Consumer Rights Act 2015', employer:'the Employment Rights Act 1996', other:'the Consumer Rights Act 2015' },
 }
 
 const ESCALATION = {
@@ -1477,7 +1479,7 @@ export default function App() {
             <p className="sec-sub">No legal knowledge needed. Describe what happened and get your letter instantly.</p>
             <div className="how-grid">
               {[
-                {n:'01',title:'Pick your dispute',body:'Choose from 9 categories — overcharges, denied refunds, bad contractors, kept deposits, cancelled flights and more.'},
+                {n:'01',title:'Pick your dispute',body:'Choose from 10 categories — overcharges, denied refunds, bad contractors, kept deposits, credit report errors and more.'},
                 {n:'02',title:'Describe what happened',body:'Tell us the company name and what went wrong. The more specific you are, the stronger the letter.'},
                 {n:'03',title:'Copy and send it',body:'Instant letter with real consumer protection laws. Copy, send certified mail, get your money back.'},
               ].map(s=>(
