@@ -974,15 +974,11 @@ export default function App() {
   }
 
   async function signOut() {
-    try {
-      if (supabase) await supabase.auth.signOut({ scope: 'global' })
-    } catch(e) { console.log('signout error:', e) }
-    localStorage.removeItem('cb_user')
-    setUser(null)
-    setScreen('home')
-    setDisputeType(null)
     setShowUserMenu(false)
-    setLetterCount(getLetterCount())
+    try { if (supabase) await supabase.auth.signOut() } catch(e) {}
+    localStorage.removeItem('cb_user')
+    // Force full page reload — guaranteed clean signout
+    window.location.href = window.location.origin
   }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
