@@ -4,13 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 // ── Supabase Client ──────────────────────────────────────────────────
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  }
-}) : null
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
 
 // ── PayPal IDs (SET TO FREE FOR TESTING — swap back after testing) ───
 const TESTING_MODE = false // LIVE — plans are paid
@@ -754,15 +748,7 @@ ${form.yourName||'[YOUR NAME]'}`)
 
 export default function App() {
   const [screen, setScreen] = useState('home')
-  const [user, setUser] = useState(() => {
-    try {
-      // If user explicitly signed out, never restore from localStorage
-      if (localStorage.getItem('cb_signed_out') === '1') return null
-      const saved = localStorage.getItem('cb_user')
-      if (saved) return JSON.parse(saved)
-      return null
-    } catch(e) { return null }
-  })
+  const [user, setUser] = useState(null)
   const [disputeType, setDisputeType] = useState(null)
   const [form, setForm] = useState({ company:'', amount:'', description:'', desired:'', tone:'firm', yourName:'', city:'', country:'US' })
   const [letter, setLetter] = useState('')
@@ -809,8 +795,6 @@ export default function App() {
     if (!supabase) return
     // Check if user already logged in
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      // If user explicitly signed out, don't auto-restore even if Google session exists
-      if (localStorage.getItem('cb_signed_out') === '1') return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase profiles table
@@ -851,9 +835,7 @@ export default function App() {
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
           plan: userPlanFromDB
         }
-        localStorage.removeItem('cb_signed_out')
         setUser(newUser)
-        localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
         // Load letter count per account
         const userKey = 'cb_usage_' + u.email
@@ -865,11 +847,7 @@ export default function App() {
         if (disputeType) setScreen('form')
       }
     })
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Always block auto-restore if user explicitly signed out
-      // Flag only removed when user actively clicks Sign In button
-      if (localStorage.getItem('cb_signed_out') === '1') return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase
@@ -907,7 +885,6 @@ export default function App() {
           plan: userPlanFromDB
         }
         setUser(newUser)
-        localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
         const userKey = 'cb_usage_' + u.email
         const month = new Date().toISOString().slice(0,7)
@@ -917,10 +894,8 @@ export default function App() {
         setLetterCount(count)
         if (disputeType) setScreen('form')
       } else if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('cb_user')
         setUser(null)
       }
-      // For TOKEN_REFRESHED or other events — keep current user state
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -955,8 +930,6 @@ export default function App() {
   }, [user])
 
   async function handleGoogleSignIn() {
-    // User is actively choosing to sign in — clear the signed-out flag
-    localStorage.removeItem('cb_signed_out')
     if (supabase) {
       // Real Google OAuth via Supabase
       const { error } = await supabase.auth.signInWithOAuth({
@@ -981,11 +954,7 @@ export default function App() {
   }
 
   async function signOut() {
-    // Wrap supabase call in try/catch — if it throws, rest MUST still run
-    try { if (supabase) await supabase.auth.signOut() } catch(e) {}
-    // These always run no matter what
-    localStorage.removeItem('cb_user')
-    localStorage.setItem('cb_signed_out', '1')
+    if (supabase) await supabase.auth.signOut()
     setUser(null)
     setLetterCount(getLetterCount())
   }
