@@ -867,7 +867,9 @@ export default function App() {
     })
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (localStorage.getItem('cb_signed_out') === '1' && event !== 'SIGNED_IN') return
+      // Always block auto-restore if user explicitly signed out
+      // Flag only removed when user actively clicks Sign In button
+      if (localStorage.getItem('cb_signed_out') === '1') return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase
@@ -904,7 +906,6 @@ export default function App() {
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
           plan: userPlanFromDB
         }
-        localStorage.removeItem('cb_signed_out')
         setUser(newUser)
         localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
@@ -954,6 +955,8 @@ export default function App() {
   }, [user])
 
   async function handleGoogleSignIn() {
+    // User is actively choosing to sign in — clear the signed-out flag
+    localStorage.removeItem('cb_signed_out')
     if (supabase) {
       // Real Google OAuth via Supabase
       const { error } = await supabase.auth.signInWithOAuth({
