@@ -974,9 +974,14 @@ export default function App() {
   }
 
   async function signOut() {
-    if (supabase) await supabase.auth.signOut()
+    try {
+      if (supabase) await supabase.auth.signOut({ scope: 'global' })
+    } catch(e) { console.log('signout error:', e) }
     localStorage.removeItem('cb_user')
     setUser(null)
+    setScreen('home')
+    setDisputeType(null)
+    setShowUserMenu(false)
     setLetterCount(getLetterCount())
   }
 
