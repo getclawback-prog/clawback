@@ -978,7 +978,9 @@ export default function App() {
   }
 
   async function signOut() {
-    if (supabase) await supabase.auth.signOut()
+    // Wrap supabase call in try/catch — if it throws, rest MUST still run
+    try { if (supabase) await supabase.auth.signOut() } catch(e) {}
+    // These always run no matter what
     localStorage.removeItem('cb_user')
     localStorage.setItem('cb_signed_out', '1')
     setUser(null)
