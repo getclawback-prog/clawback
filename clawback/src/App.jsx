@@ -748,7 +748,13 @@ ${form.yourName||'[YOUR NAME]'}`)
 
 export default function App() {
   const [screen, setScreen] = useState('home')
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => {
+    try {
+      if (localStorage.getItem('cb_signed_out') === '1') return null
+      const saved = localStorage.getItem('cb_user')
+      return saved ? JSON.parse(saved) : null
+    } catch(e) { return null }
+  })
   const [disputeType, setDisputeType] = useState(null)
   const [form, setForm] = useState({ company:'', amount:'', description:'', desired:'', tone:'firm', yourName:'', city:'', country:'US' })
   const [letter, setLetter] = useState('')
@@ -795,6 +801,7 @@ export default function App() {
     if (!supabase) return
     // Check if user already logged in
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (localStorage.getItem('cb_signed_out') === '1') return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase profiles table
@@ -836,18 +843,28 @@ export default function App() {
           plan: userPlanFromDB
         }
         setUser(newUser)
+        localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
-        // Load letter count per account
-        const userKey = 'cb_usage_' + u.email
+        // Sync letter count from Supabase so desktop+mobile share same count
         const month = new Date().toISOString().slice(0,7)
-        const saved = JSON.parse(localStorage.getItem(userKey)||'{}')
-        const count = saved.month === month ? (saved.count||0) : 0
+        let count = 0
+        try {
+          const { data: prof } = await supabase
+            .from('profiles').select('letters_used, month').eq('email', u.email).single()
+          if (prof && prof.month === month) count = prof.letters_used || 0
+          else if (prof && prof.month !== month) {
+            // New month — reset count in Supabase
+            await supabase.from('profiles').update({ letters_used: 0, month }).eq('email', u.email)
+          }
+        } catch(e) {}
         localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
         setLetterCount(count)
         if (disputeType) setScreen('form')
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Block EVERYTHING if user explicitly signed out — only handleGoogleSignIn clears this
+      if (localStorage.getItem('cb_signed_out') === '1') return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase
@@ -885,15 +902,23 @@ export default function App() {
           plan: userPlanFromDB
         }
         setUser(newUser)
+        localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
-        const userKey = 'cb_usage_' + u.email
         const month = new Date().toISOString().slice(0,7)
-        const saved = JSON.parse(localStorage.getItem(userKey)||'{}')
-        const count = saved.month === month ? (saved.count||0) : 0
+        let count = 0
+        try {
+          const { data: prof } = await supabase
+            .from('profiles').select('letters_used, month').eq('email', u.email).single()
+          if (prof && prof.month === month) count = prof.letters_used || 0
+          else if (prof && prof.month !== month) {
+            await supabase.from('profiles').update({ letters_used: 0, month }).eq('email', u.email)
+          }
+        } catch(e) {}
         localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
         setLetterCount(count)
         if (disputeType) setScreen('form')
       } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('cb_user')
         setUser(null)
       }
     })
@@ -930,6 +955,7 @@ export default function App() {
   }, [user])
 
   async function handleGoogleSignIn() {
+    localStorage.removeItem('cb_signed_out')
     if (supabase) {
       // Real Google OAuth via Supabase
       const { error } = await supabase.auth.signInWithOAuth({
@@ -954,7 +980,9 @@ export default function App() {
   }
 
   async function signOut() {
-    if (supabase) await supabase.auth.signOut()
+    try { if (supabase) await supabase.auth.signOut() } catch(e) {}
+    localStorage.setItem('cb_signed_out', '1')
+    localStorage.removeItem('cb_user')
     setUser(null)
     setLetterCount(getLetterCount())
   }
@@ -1001,11 +1029,14 @@ export default function App() {
       incrementLetterCount()
       const newCount = getLetterCount()
       setLetterCount(newCount)
-      // Save per-account count so each Google account gets fresh 2 letters
-      if (user?.email) {
-        const userKey = 'cb_usage_' + user.email
+      // Sync to Supabase so count is shared across desktop + mobile
+      if (user?.email && supabase) {
         const month = new Date().toISOString().slice(0,7)
-        localStorage.setItem(userKey, JSON.stringify({ month, count: newCount }))
+        try {
+          await supabase.from('profiles')
+            .update({ letters_used: newCount, month })
+            .eq('email', user.email)
+        } catch(e) {}
       }
     }
     setTips(TIPS[disputeType]||TIPS.other)
