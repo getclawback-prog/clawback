@@ -801,7 +801,9 @@ export default function App() {
     if (!supabase) return
     // Check if user already logged in
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (localStorage.getItem('cb_signed_out') === '1') return
+      const isOAuthReturn = window.location.hash.includes('access_token') ||
+                            window.location.search.includes('code=')
+      if (localStorage.getItem('cb_signed_out') === '1' && !isOAuthReturn) return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase profiles table
@@ -863,8 +865,10 @@ export default function App() {
       }
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Block EVERYTHING if user explicitly signed out — only handleGoogleSignIn clears this
-      if (localStorage.getItem('cb_signed_out') === '1') return
+      // Block auto-restore if user signed out — but allow real OAuth sign-ins through
+      const isOAuthReturn = window.location.hash.includes('access_token') ||
+                            window.location.search.includes('code=')
+      if (localStorage.getItem('cb_signed_out') === '1' && !isOAuthReturn) return
       if (session?.user) {
         const u = session.user
         // Load plan from Supabase
