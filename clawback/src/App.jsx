@@ -980,11 +980,12 @@ export default function App() {
   }
 
   async function signOut() {
-    try { if (supabase) await supabase.auth.signOut() } catch(e) {}
+    // Set flag FIRST before signOut fires onAuthStateChange
     localStorage.setItem('cb_signed_out', '1')
     localStorage.removeItem('cb_user')
     setUser(null)
     setLetterCount(getLetterCount())
+    try { if (supabase) await supabase.auth.signOut() } catch(e) {}
   }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
