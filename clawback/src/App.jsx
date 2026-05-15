@@ -1034,14 +1034,13 @@ export default function App() {
       incrementLetterCount()
       const newCount = getLetterCount()
       setLetterCount(newCount)
-      // Sync to Supabase so count is shared across desktop + mobile
+      // Fire and forget — no await so loading never hangs
       if (user?.email && supabase) {
         const month = new Date().toISOString().slice(0,7)
-        try {
-          await supabase.from('profiles')
-            .update({ letters_used: newCount, month })
-            .eq('email', user.email)
-        } catch(e) {}
+        supabase.from('profiles')
+          .update({ letters_used: newCount, month })
+          .eq('email', user.email)
+          .then(()=>{}).catch(()=>{})
       }
     }
     setTips(TIPS[disputeType]||TIPS.other)
