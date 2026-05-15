@@ -853,9 +853,15 @@ export default function App() {
         try {
           const { data: prof } = await supabase
             .from('profiles').select('letters_used, month').eq('user_id', u.id).single()
-          if (prof && prof.month === month) count = prof.letters_used || 0
-          else if (prof && prof.month !== month) {
-            await supabase.from('profiles').update({ letters_used: 0, month }).eq('user_id', u.id)
+          if (prof) {
+            if (prof.month === month) {
+              // Same month — use saved count
+              count = prof.letters_used || 0
+            } else {
+              // Different month — reset count but keep reading as 0 (new month)
+              count = 0
+              supabase.from('profiles').update({ letters_used: 0, month }).eq('user_id', u.id).then(()=>{}).catch(()=>{})
+            }
           }
         } catch(e) {}
         localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
@@ -912,9 +918,13 @@ export default function App() {
         try {
           const { data: prof } = await supabase
             .from('profiles').select('letters_used, month').eq('user_id', u.id).single()
-          if (prof && prof.month === month) count = prof.letters_used || 0
-          else if (prof && prof.month !== month) {
-            await supabase.from('profiles').update({ letters_used: 0, month }).eq('user_id', u.id)
+          if (prof) {
+            if (prof.month === month) {
+              count = prof.letters_used || 0
+            } else {
+              count = 0
+              supabase.from('profiles').update({ letters_used: 0, month }).eq('user_id', u.id).then(()=>{}).catch(()=>{})
+            }
           }
         } catch(e) {}
         localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
