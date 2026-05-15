@@ -839,6 +839,7 @@ export default function App() {
         } catch(e) { console.log('Profile load error:', e) }
 
         const newUser = {
+          id: u.id,
           name: u.user_metadata?.full_name || u.email,
           email: u.email,
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
@@ -905,6 +906,7 @@ export default function App() {
         } catch(e) {}
 
         const newUser = {
+          id: u.id,
           name: u.user_metadata?.full_name || u.email,
           email: u.email,
           avatar: (u.user_metadata?.full_name || u.email || 'U')[0].toUpperCase(),
@@ -1044,17 +1046,12 @@ export default function App() {
       const newCount = getLetterCount()
       setLetterCount(newCount)
       // Fire and forget — no await so loading never hangs
-      if (user?.email && supabase) {
+      if (user?.id && supabase) {
         const month = new Date().toISOString().slice(0,7)
-        // Get user_id from Supabase session for RLS-safe update
-        supabase.auth.getUser().then(({ data }) => {
-          if (data?.user?.id) {
-            supabase.from('profiles')
-              .update({ letters_used: newCount, month })
-              .eq('user_id', data.user.id)
-              .then(()=>{}).catch(()=>{})
-          }
-        })
+        supabase.from('profiles')
+          .update({ letters_used: newCount, month })
+          .eq('user_id', user.id)
+          .then(()=>{}).catch(()=>{})
       }
     }
     setTips(TIPS[disputeType]||TIPS.other)
