@@ -1004,16 +1004,44 @@ export default function App() {
   }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
-  const canGenerate = userPlan !== 'free' || getLetterCount() < FREE_LIMIT
+  // canGenerate uses letterCount state — updated from Supabase on signin
+  const canGenerate = userPlan !== 'free' || letterCount < FREE_LIMIT
 
   async function generate() {
     if (!disputeType || !form.company || !form.description) return
-    // Force signup if not logged in
-    if (!user) {
-      setShowAuthModal(true)
-      return
+    if (!user) { setShowAuthModal(true); return }
+
+    // Server-side check BEFORE generating — like AI image generators
+    if (userPlan === 'free') {
+      const month = new Date().toISOString().slice(0,7)
+      let serverCount = letterCount // fallback to state
+      if (user?.id && supabase) {
+        try {
+          const { data: prof } = await supabase
+            .from('profiles').select('letters_used, month').eq('user_id', user.id).single()
+          if (prof) serverCount = (prof.month === month) ? (prof.letters_used || 0) : 0
+        } catch(e) {}
+      }
+      if (serverCount >= FREE_LIMIT) {
+        setLetterCount(FREE_LIMIT)
+        localStorage.setItem('cb_usage', JSON.stringify({ month, count: FREE_LIMIT }))
+        setShowAuthModal(true)
+        return
+      }
+      // Increment server-side immediately before generating
+      const newCount = serverCount + 1
+      if (user?.id && supabase) {
+        try {
+          await supabase.from('profiles')
+            .update({ letters_used: newCount, month })
+            .eq('user_id', user.id)
+        } catch(e) {}
+      }
+      incrementLetterCount()
+      setLetterCount(newCount)
+      localStorage.setItem('cb_usage', JSON.stringify({ month, count: newCount }))
     }
-    if (!canGenerate) { setShowAuthModal(true); return }
+
     setScreen('loading')
     try {
       const apiKey = import.meta.env.VITE_GROQ_API_KEY
@@ -1041,19 +1069,6 @@ export default function App() {
       const text = data.choices?.[0]?.message?.content
       setLetter(text && text.length>80 ? text : generateTemplate({disputeType,form}))
     } catch { setLetter(generateTemplate({disputeType,form})) }
-    if (userPlan==='free') {
-      incrementLetterCount()
-      const newCount = getLetterCount()
-      setLetterCount(newCount)
-      // Fire and forget — no await so loading never hangs
-      if (user?.id && supabase) {
-        const month = new Date().toISOString().slice(0,7)
-        supabase.from('profiles')
-          .update({ letters_used: newCount, month })
-          .eq('user_id', user.id)
-          .then(()=>{}).catch(()=>{})
-      }
-    }
     setTips(TIPS[disputeType]||TIPS.other)
     setScreen('result')
   }
