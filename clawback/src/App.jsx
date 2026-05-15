@@ -852,11 +852,10 @@ export default function App() {
         let count = 0
         try {
           const { data: prof } = await supabase
-            .from('profiles').select('letters_used, month').eq('email', u.email).single()
+            .from('profiles').select('letters_used, month').eq('user_id', u.id).single()
           if (prof && prof.month === month) count = prof.letters_used || 0
           else if (prof && prof.month !== month) {
-            // New month — reset count in Supabase
-            await supabase.from('profiles').update({ letters_used: 0, month }).eq('email', u.email)
+            await supabase.from('profiles').update({ letters_used: 0, month }).eq('user_id', u.id)
           }
         } catch(e) {}
         localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
@@ -912,10 +911,10 @@ export default function App() {
         let count = 0
         try {
           const { data: prof } = await supabase
-            .from('profiles').select('letters_used, month').eq('email', u.email).single()
+            .from('profiles').select('letters_used, month').eq('user_id', u.id).single()
           if (prof && prof.month === month) count = prof.letters_used || 0
           else if (prof && prof.month !== month) {
-            await supabase.from('profiles').update({ letters_used: 0, month }).eq('email', u.email)
+            await supabase.from('profiles').update({ letters_used: 0, month }).eq('user_id', u.id)
           }
         } catch(e) {}
         localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
@@ -1037,10 +1036,15 @@ export default function App() {
       // Fire and forget — no await so loading never hangs
       if (user?.email && supabase) {
         const month = new Date().toISOString().slice(0,7)
-        supabase.from('profiles')
-          .update({ letters_used: newCount, month })
-          .eq('email', user.email)
-          .then(()=>{}).catch(()=>{})
+        // Get user_id from Supabase session for RLS-safe update
+        supabase.auth.getUser().then(({ data }) => {
+          if (data?.user?.id) {
+            supabase.from('profiles')
+              .update({ letters_used: newCount, month })
+              .eq('user_id', data.user.id)
+              .then(()=>{}).catch(()=>{})
+          }
+        })
       }
     }
     setTips(TIPS[disputeType]||TIPS.other)
