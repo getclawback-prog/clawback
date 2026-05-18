@@ -774,7 +774,20 @@ export default function App() {
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
 
-  // Cross-tab sync removed — API handles cross-device sync on sign-in
+  // Poll API every 30 seconds to sync letter count across devices
+  useEffect(() => {
+    if (!user?.id || userPlan !== 'free') return
+    const interval = setInterval(async () => {
+      try {
+        const r = await fetch('/api/letters?userId=' + user.id + '&t=' + Date.now())
+        if (r.ok) {
+          const d = await r.json()
+          setLetterCount(d.count || 0)
+        }
+      } catch(e) {}
+    }, 30000) // every 30 seconds
+    return () => clearInterval(interval)
+  }, [user?.id, userPlan])
 
   // Close user menu when clicking outside
   useEffect(() => {
