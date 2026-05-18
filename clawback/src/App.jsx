@@ -996,7 +996,7 @@ export default function App() {
   }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
-  const canGenerate = userPlan !== 'free' || getLetterCount() < FREE_LIMIT
+  const canGenerate = userPlan !== 'free' || letterCount < FREE_LIMIT
 
   async function generate() {
     if (!disputeType || !form.company || !form.description) return
