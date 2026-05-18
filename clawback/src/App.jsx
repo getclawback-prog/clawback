@@ -774,16 +774,21 @@ export default function App() {
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
 
-  // Sync letter count across tabs instantly
+  // Sync letter count across tabs using API — not localStorage
   useEffect(() => {
+    if (!user?.id) return
     function handleStorageChange(e) {
       if (e.key === 'cb_usage') {
-        setLetterCount(getLetterCount())
+        // Always fetch fresh from API instead of reading localStorage
+        fetch('/api/letters?userId=' + user.id + '&t=' + Date.now())
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d) setLetterCount(d.count || 0) })
+          .catch(() => {})
       }
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
+  }, [user?.id])
 
   // Close user menu when clicking outside
   useEffect(() => {
