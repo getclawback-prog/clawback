@@ -848,25 +848,20 @@ export default function App() {
         setUser(newUser)
         localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
-        // Sync letter count from Supabase so desktop+mobile share same count
-        const month = new Date().toISOString().slice(0,7)
-        let count = 0
+        // Load letter count from backend API for cross-device sync
         try {
-          const { data: prof } = await supabase
-            .from('profiles').select('letters_used, month').eq('user_id', u.id).single()
-          if (prof) {
-            if (prof.month === month) {
-              // Same month — use saved count
-              count = prof.letters_used || 0
-            } else {
-              // Different month — reset count but keep reading as 0 (new month)
-              count = 0
-              supabase.from('profiles').update({ letters_used: 0, month }).eq('user_id', u.id).then(()=>{}).catch(()=>{})
-            }
+          const r = await fetch('/api/letters?userId=' + u.id)
+          if (r.ok) {
+            const d = await r.json()
+            const month = new Date().toISOString().slice(0,7)
+            const count = d.count || 0
+            localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
+            setLetterCount(count)
           }
-        } catch(e) {}
-        localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
-        setLetterCount(count)
+        } catch(e) {
+          // Fallback to localStorage if API unavailable
+          setLetterCount(getLetterCount())
+        }
         if (disputeType) setScreen('form')
       }
     })
@@ -915,22 +910,19 @@ export default function App() {
         setUser(newUser)
         localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
-        const month = new Date().toISOString().slice(0,7)
-        let count = 0
+        // Load letter count from backend API for cross-device sync
         try {
-          const { data: prof } = await supabase
-            .from('profiles').select('letters_used, month').eq('user_id', u.id).single()
-          if (prof) {
-            if (prof.month === month) {
-              count = prof.letters_used || 0
-            } else {
-              count = 0
-              supabase.from('profiles').update({ letters_used: 0, month }).eq('user_id', u.id).then(()=>{}).catch(()=>{})
-            }
+          const r = await fetch('/api/letters?userId=' + u.id)
+          if (r.ok) {
+            const d = await r.json()
+            const month = new Date().toISOString().slice(0,7)
+            const count = d.count || 0
+            localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
+            setLetterCount(count)
           }
-        } catch(e) {}
-        localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
-        setLetterCount(count)
+        } catch(e) {
+          setLetterCount(getLetterCount())
+        }
         if (disputeType) setScreen('form')
       } else if (event === 'SIGNED_OUT') {
         localStorage.removeItem('cb_user')
@@ -1004,43 +996,12 @@ export default function App() {
   }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
-  // canGenerate uses letterCount state — updated from Supabase on signin
-  const canGenerate = userPlan !== 'free' || letterCount < FREE_LIMIT
+  const canGenerate = userPlan !== 'free' || getLetterCount() < FREE_LIMIT
 
   async function generate() {
     if (!disputeType || !form.company || !form.description) return
     if (!user) { setShowAuthModal(true); return }
-
-    // Server-side check BEFORE generating — like AI image generators
-    if (userPlan === 'free') {
-      const month = new Date().toISOString().slice(0,7)
-      let serverCount = letterCount // fallback to state
-      if (user?.id && supabase) {
-        try {
-          const { data: prof } = await supabase
-            .from('profiles').select('letters_used, month').eq('user_id', user.id).single()
-          if (prof) serverCount = (prof.month === month) ? (prof.letters_used || 0) : 0
-        } catch(e) {}
-      }
-      if (serverCount >= FREE_LIMIT) {
-        setLetterCount(FREE_LIMIT)
-        localStorage.setItem('cb_usage', JSON.stringify({ month, count: FREE_LIMIT }))
-        setShowAuthModal(true)
-        return
-      }
-      // Increment server-side immediately before generating
-      const newCount = serverCount + 1
-      if (user?.id && supabase) {
-        try {
-          await supabase.from('profiles')
-            .update({ letters_used: newCount, month })
-            .eq('user_id', user.id)
-        } catch(e) {}
-      }
-      incrementLetterCount()
-      setLetterCount(newCount)
-      localStorage.setItem('cb_usage', JSON.stringify({ month, count: newCount }))
-    }
+    if (!canGenerate) { setShowAuthModal(true); return }
 
     setScreen('loading')
     try {
@@ -1069,6 +1030,25 @@ export default function App() {
       const text = data.choices?.[0]?.message?.content
       setLetter(text && text.length>80 ? text : generateTemplate({disputeType,form}))
     } catch { setLetter(generateTemplate({disputeType,form})) }
+    if (userPlan==='free') {
+      incrementLetterCount()
+      const newCount = getLetterCount()
+      setLetterCount(newCount)
+      // Per-account key so each Google account gets its own 2 letters
+      if (user?.email) {
+        const userKey = 'cb_usage_' + user.email
+        const month = new Date().toISOString().slice(0,7)
+        localStorage.setItem(userKey, JSON.stringify({ month, count: newCount }))
+      }
+      // Sync to backend API for cross-device support
+      if (user?.id) {
+        fetch('/api/letters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, count: newCount })
+        }).catch(()=>{})
+      }
+    }
     setTips(TIPS[disputeType]||TIPS.other)
     setScreen('result')
   }
