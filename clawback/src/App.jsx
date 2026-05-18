@@ -776,7 +776,7 @@ export default function App() {
 
   // Poll API every 30 seconds to sync letter count across devices
   useEffect(() => {
-    if (!user?.id || userPlan !== 'free') return
+    if (!user?.id || user?.plan !== 'free') return
     const interval = setInterval(async () => {
       try {
         const r = await fetch('/api/letters?userId=' + user.id + '&t=' + Date.now())
@@ -785,9 +785,9 @@ export default function App() {
           setLetterCount(d.count || 0)
         }
       } catch(e) {}
-    }, 30000) // every 30 seconds
+    }, 30000)
     return () => clearInterval(interval)
-  }, [user?.id, userPlan])
+  }, [user?.id, user?.plan])
 
   // Close user menu when clicking outside
   useEffect(() => {
