@@ -22,6 +22,9 @@ module.exports = async function handler(req, res) {
 
   // GET — return current letter count for this user
   if (req.method === 'GET') {
+    // Prevent caching so mobile always gets fresh count
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+    res.setHeader('Pragma', 'no-cache')
     try {
       const { data, error } = await supabase
         .from('profiles')
