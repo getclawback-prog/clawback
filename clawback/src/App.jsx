@@ -774,21 +774,7 @@ export default function App() {
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
 
-  // Sync letter count across tabs using API — not localStorage
-  useEffect(() => {
-    if (!user?.id) return
-    function handleStorageChange(e) {
-      if (e.key === 'cb_usage') {
-        // Always fetch fresh from API instead of reading localStorage
-        fetch('/api/letters?userId=' + user.id + '&t=' + Date.now())
-          .then(r => r.ok ? r.json() : null)
-          .then(d => { if (d) setLetterCount(d.count || 0) })
-          .catch(() => {})
-      }
-    }
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [user?.id])
+  // Cross-tab sync removed — API handles cross-device sync on sign-in
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -858,15 +844,10 @@ export default function App() {
           const r = await fetch('/api/letters?userId=' + u.id + '&t=' + Date.now())
           if (r.ok) {
             const d = await r.json()
-            const month = new Date().toISOString().slice(0,7)
             const count = d.count || 0
-            localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
             setLetterCount(count)
           }
-        } catch(e) {
-          // Fallback to localStorage if API unavailable
-          setLetterCount(getLetterCount())
-        }
+        } catch(e) {}
         if (disputeType) setScreen('form')
       }
     })
@@ -920,14 +901,10 @@ export default function App() {
           const r = await fetch('/api/letters?userId=' + u.id + '&t=' + Date.now())
           if (r.ok) {
             const d = await r.json()
-            const month = new Date().toISOString().slice(0,7)
             const count = d.count || 0
-            localStorage.setItem('cb_usage', JSON.stringify({ month, count }))
             setLetterCount(count)
           }
-        } catch(e) {
-          setLetterCount(getLetterCount())
-        }
+        } catch(e) {}
         if (disputeType) setScreen('form')
       } else if (event === 'SIGNED_OUT') {
         localStorage.removeItem('cb_user')
