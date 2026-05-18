@@ -850,7 +850,7 @@ export default function App() {
         setShowAuthModal(false)
         // Load letter count from backend API for cross-device sync
         try {
-          const r = await fetch('/api/letters?userId=' + u.id)
+          const r = await fetch('/api/letters?userId=' + u.id + '&t=' + Date.now())
           if (r.ok) {
             const d = await r.json()
             const month = new Date().toISOString().slice(0,7)
@@ -912,7 +912,7 @@ export default function App() {
         setShowAuthModal(false)
         // Load letter count from backend API for cross-device sync
         try {
-          const r = await fetch('/api/letters?userId=' + u.id)
+          const r = await fetch('/api/letters?userId=' + u.id + '&t=' + Date.now())
           if (r.ok) {
             const d = await r.json()
             const month = new Date().toISOString().slice(0,7)
