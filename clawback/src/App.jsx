@@ -1004,7 +1004,29 @@ export default function App() {
   async function generate() {
     if (!disputeType || !form.company || !form.description) return
     if (!user) { setShowAuthModal(true); return }
-    if (!canGenerate) { setShowAuthModal(true); return }
+
+    // Always check API before generating — single source of truth for all devices
+    if (userPlan === 'free' && user?.id) {
+      try {
+        const r = await fetch('/api/letters?userId=' + user.id + '&t=' + Date.now(), {
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+        if (r.ok) {
+          const d = await r.json()
+          const freshCount = d.count || 0
+          setLetterCount(freshCount) // update UI instantly
+          if (freshCount >= FREE_LIMIT) {
+            setShowAuthModal(true)
+            return
+          }
+        }
+      } catch(e) {
+        // fallback to state if API fails
+        if (!canGenerate) { setShowAuthModal(true); return }
+      }
+    } else if (!canGenerate) {
+      setShowAuthModal(true); return
+    }
 
     setScreen('loading')
     try {
