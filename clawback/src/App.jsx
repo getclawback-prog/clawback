@@ -763,7 +763,7 @@ export default function App() {
   const [wordIdx, setWordIdx] = useState(0)
   const [billing, setBilling] = useState('monthly')
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [letterCount, setLetterCount] = useState(FREE_LIMIT) // assume limit until API confirms
+  const [letterCount, setLetterCount] = useState(0)
   const [darkMode, setDarkMode] = useState(true)
   const [testPlan, setTestPlan] = useState('free') // free by default
   const [showTestSwitcher, setShowTestSwitcher] = useState(false)
@@ -791,17 +791,19 @@ export default function App() {
       if (document.visibilityState === 'visible') fetchLetterCount(user.id)
     }
     document.addEventListener('visibilitychange', onVisible)
-    // Subscribe to realtime changes on profiles row
+    // Subscribe to realtime changes on profiles table
     const channel = supabase
       .channel('letter-count-' + user.id)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
-        table: 'profiles',
-        filter: 'user_id=eq.' + user.id
+        table: 'profiles'
       }, (payload) => {
-        const newCount = payload.new?.letters_used ?? 0
-        setLetterCount(newCount)
+        // Only update if this is our user's row
+        if (payload.new?.user_id === user.id) {
+          const newCount = payload.new?.letters_used ?? 0
+          setLetterCount(newCount)
+        }
       })
       .subscribe()
     return () => {
@@ -992,7 +994,7 @@ export default function App() {
     localStorage.setItem('cb_signed_out', '1')
     localStorage.removeItem('cb_user')
     setUser(null)
-    setLetterCount(FREE_LIMIT)
+    setLetterCount(0)
     try { if (supabase) await supabase.auth.signOut() } catch(e) {}
   }
 
@@ -1032,9 +1034,19 @@ export default function App() {
       setLetter(text && text.length>80 ? text : generateTemplate({disputeType,form}))
     } catch { setLetter(generateTemplate({disputeType,form})) }
     if (userPlan==='free') {
-      const newCount = letterCount + 1
+      // Fetch fresh count first to avoid stale state bugs
+      let currentCount = letterCount
+      if (user?.id) {
+        try {
+          const r = await fetch('/api/letters?userId=' + user.id + '&t=' + Date.now(), {
+            headers: { 'Cache-Control': 'no-cache' }
+          })
+          if (r.ok) { const d = await r.json(); currentCount = d.count || 0 }
+        } catch(e) {}
+      }
+      const newCount = currentCount + 1
       setLetterCount(newCount)
-      // Save to API so all devices see same count
+      // Save to API — Supabase update triggers Realtime to all devices instantly
       if (user?.id) {
         fetch('/api/letters', {
           method: 'POST',
