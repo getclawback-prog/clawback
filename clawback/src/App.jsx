@@ -763,7 +763,7 @@ export default function App() {
   const [wordIdx, setWordIdx] = useState(0)
   const [billing, setBilling] = useState('monthly')
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [letterCount, setLetterCount] = useState(getLetterCount())
+  const [letterCount, setLetterCount] = useState(FREE_LIMIT) // assume limit until API confirms
   const [darkMode, setDarkMode] = useState(true)
   const [testPlan, setTestPlan] = useState('free') // free by default
   const [showTestSwitcher, setShowTestSwitcher] = useState(false)
@@ -773,21 +773,42 @@ export default function App() {
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
+  // Rule 1+2: Fetch count from API - single source of truth
+  async function fetchLetterCount(userId) {
+    try {
+      const r = await fetch('/api/letters?userId=' + userId + '&t=' + Date.now(), {
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      })
+      if (r.ok) { const d = await r.json(); setLetterCount(d.count || 0) }
+    } catch(e) {}
+  }
 
-  // Poll API every 30 seconds to sync letter count across devices
+  // Supabase Realtime — instantly sync letter count across ALL devices simultaneously
   useEffect(() => {
-    if (!user?.id || user?.plan !== 'free') return
-    const interval = setInterval(async () => {
-      try {
-        const r = await fetch('/api/letters?userId=' + user.id + '&t=' + Date.now())
-        if (r.ok) {
-          const d = await r.json()
-          setLetterCount(d.count || 0)
-        }
-      } catch(e) {}
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [user?.id, user?.plan])
+    if (!user?.id || !supabase) return
+    // Also re-fetch on tab switch as backup
+    function onVisible() {
+      if (document.visibilityState === 'visible') fetchLetterCount(user.id)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    // Subscribe to realtime changes on profiles row
+    const channel = supabase
+      .channel('letter-count-' + user.id)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: 'user_id=eq.' + user.id
+      }, (payload) => {
+        const newCount = payload.new?.letters_used ?? 0
+        setLetterCount(newCount)
+      })
+      .subscribe()
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -852,15 +873,8 @@ export default function App() {
         setUser(newUser)
         localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
-        // Load letter count from backend API for cross-device sync
-        try {
-          const r = await fetch('/api/letters?userId=' + u.id + '&t=' + Date.now())
-          if (r.ok) {
-            const d = await r.json()
-            const count = d.count || 0
-            setLetterCount(count)
-          }
-        } catch(e) {}
+        // Load letter count from API - shared across all devices
+        await fetchLetterCount(u.id)
         if (disputeType) setScreen('form')
       }
     })
@@ -909,15 +923,8 @@ export default function App() {
         setUser(newUser)
         localStorage.setItem('cb_user', JSON.stringify(newUser))
         setShowAuthModal(false)
-        // Load letter count from backend API for cross-device sync
-        try {
-          const r = await fetch('/api/letters?userId=' + u.id + '&t=' + Date.now())
-          if (r.ok) {
-            const d = await r.json()
-            const count = d.count || 0
-            setLetterCount(count)
-          }
-        } catch(e) {}
+        // Load letter count from API - shared across all devices
+        await fetchLetterCount(u.id)
         if (disputeType) setScreen('form')
       } else if (event === 'SIGNED_OUT') {
         localStorage.removeItem('cb_user')
@@ -974,7 +981,6 @@ export default function App() {
       const mockUser = { name:'Demo User', email:'demo@gmail.com', avatar:'D', plan:'free' }
       setUser(mockUser)
       setShowAuthModal(false)
-      localStorage.setItem('cb_usage', JSON.stringify({ month:new Date().toISOString().slice(0,7), count:0 }))
       setLetterCount(0)
       // Go to form if dispute already selected
       if (disputeType) setScreen('form')
@@ -986,12 +992,12 @@ export default function App() {
     localStorage.setItem('cb_signed_out', '1')
     localStorage.removeItem('cb_user')
     setUser(null)
-    setLetterCount(getLetterCount())
+    setLetterCount(FREE_LIMIT)
     try { if (supabase) await supabase.auth.signOut() } catch(e) {}
   }
 
   const userPlan = TESTING_MODE ? testPlan : (user?.plan || 'free')
-  const canGenerate = userPlan !== 'free' || letterCount < FREE_LIMIT
+  const canGenerate = userPlan !== 'free' || letterCount < FREE_LIMIT // Rule 4: derived from API count
 
   async function generate() {
     if (!disputeType || !form.company || !form.description) return
@@ -1026,16 +1032,9 @@ export default function App() {
       setLetter(text && text.length>80 ? text : generateTemplate({disputeType,form}))
     } catch { setLetter(generateTemplate({disputeType,form})) }
     if (userPlan==='free') {
-      incrementLetterCount()
-      const newCount = getLetterCount()
+      const newCount = letterCount + 1
       setLetterCount(newCount)
-      // Per-account key so each Google account gets its own 2 letters
-      if (user?.email) {
-        const userKey = 'cb_usage_' + user.email
-        const month = new Date().toISOString().slice(0,7)
-        localStorage.setItem(userKey, JSON.stringify({ month, count: newCount }))
-      }
-      // Sync to backend API for cross-device support
+      // Save to API so all devices see same count
       if (user?.id) {
         fetch('/api/letters', {
           method: 'POST',
