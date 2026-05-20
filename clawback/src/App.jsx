@@ -775,12 +775,23 @@ export default function App() {
 
   // Rule 1+2: Fetch count from API - single source of truth
   async function fetchLetterCount(userId) {
+    const uid = userId || await getUserId()
+    if (!uid) return
     try {
-      const r = await fetch('/api/letters?userId=' + userId + '&t=' + Date.now(), {
+      const r = await fetch('/api/letters?userId=' + uid + '&t=' + Date.now(), {
         headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
       })
       if (r.ok) { const d = await r.json(); setLetterCount(d.count || 0) }
     } catch(e) {}
+  }
+
+  // Get reliable user ID — from state or from Supabase session
+  async function getUserId() {
+    if (user?.id) return user.id
+    try {
+      const { data } = await supabase.auth.getUser()
+      return data?.user?.id || null
+    } catch(e) { return null }
   }
 
   // Supabase Realtime — instantly sync letter count across ALL devices simultaneously
@@ -1005,27 +1016,27 @@ export default function App() {
     if (!disputeType || !form.company || !form.description) return
     if (!user) { setShowAuthModal(true); return }
 
-    // Always check API before generating — single source of truth for all devices
-    if (userPlan === 'free' && user?.id) {
-      try {
-        const r = await fetch('/api/letters?userId=' + user.id + '&t=' + Date.now(), {
-          headers: { 'Cache-Control': 'no-cache' }
-        })
-        if (r.ok) {
-          const d = await r.json()
-          const freshCount = d.count || 0
-          setLetterCount(freshCount) // update UI instantly
-          if (freshCount >= FREE_LIMIT) {
-            setShowAuthModal(true)
-            return
-          }
-        }
-      } catch(e) {
-        // fallback to state if API fails
-        if (!canGenerate) { setShowAuthModal(true); return }
+    // Get real user ID — always from Supabase session, never trust state alone
+    const uid = await getUserId()
+
+    // Check real count from API before allowing generation
+    if (userPlan === 'free') {
+      let freshCount = 0
+      if (uid) {
+        try {
+          const r = await fetch('/api/letters?userId=' + uid + '&t=' + Date.now(), {
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          })
+          if (r.ok) { const d = await r.json(); freshCount = d.count || 0 }
+        } catch(e) { freshCount = letterCount }
+      } else {
+        freshCount = letterCount
       }
-    } else if (!canGenerate) {
-      setShowAuthModal(true); return
+      setLetterCount(freshCount)
+      if (freshCount >= FREE_LIMIT) {
+        setShowAuthModal(true)
+        return
+      }
     }
 
     setScreen('loading')
@@ -1055,28 +1066,17 @@ export default function App() {
       const text = data.choices?.[0]?.message?.content
       setLetter(text && text.length>80 ? text : generateTemplate({disputeType,form}))
     } catch { setLetter(generateTemplate({disputeType,form})) }
-    if (userPlan==='free') {
-      // Fetch fresh count first to avoid stale state bugs
-      let currentCount = letterCount
-      if (user?.id) {
-        try {
-          const r = await fetch('/api/letters?userId=' + user.id + '&t=' + Date.now(), {
-            headers: { 'Cache-Control': 'no-cache' }
-          })
-          if (r.ok) { const d = await r.json(); currentCount = d.count || 0 }
-        } catch(e) {}
-      }
-      const newCount = currentCount + 1
+
+    if (userPlan === 'free' && uid) {
+      const newCount = letterCount + 1
       setLetterCount(newCount)
-      // Save to API — Supabase update triggers Realtime to all devices instantly
-      if (user?.id) {
-        fetch('/api/letters', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, count: newCount })
-        }).catch(()=>{})
-      }
+      fetch('/api/letters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid, count: newCount })
+      }).catch(()=>{})
     }
+
     setTips(TIPS[disputeType]||TIPS.other)
     setScreen('result')
   }
