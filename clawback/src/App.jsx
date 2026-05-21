@@ -1034,8 +1034,8 @@ export default function App() {
     const uid = await getUserId()
 
     // Check real count from API before allowing generation
+    let freshCount = letterCount
     if (userPlan === 'free') {
-      let freshCount = 0
       if (uid) {
         try {
           const r = await fetch('/api/letters?userId=' + uid + '&t=' + Date.now(), {
@@ -1043,8 +1043,6 @@ export default function App() {
           })
           if (r.ok) { const d = await r.json(); freshCount = d.count || 0 }
         } catch(e) { freshCount = letterCount }
-      } else {
-        freshCount = letterCount
       }
       setLetterCount(freshCount)
       if (freshCount >= FREE_LIMIT) {
@@ -1082,13 +1080,16 @@ export default function App() {
     } catch { setLetter(generateTemplate({disputeType,form})) }
 
     if (userPlan === 'free' && uid) {
-      const newCount = letterCount + 1
+      const newCount = freshCount + 1
       setLetterCount(newCount)
-      fetch('/api/letters', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: uid, count: newCount })
-      }).catch(()=>{})
+      // AWAIT the POST so polling doesn't race against it
+      try {
+        await fetch('/api/letters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: uid, count: newCount })
+        })
+      } catch(e) {}
     }
 
     setTips(TIPS[disputeType]||TIPS.other)
