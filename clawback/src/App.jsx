@@ -773,6 +773,20 @@ export default function App() {
 
   const words = ['Overcharges','Denied Refunds','Stolen Deposits','Ignored Complaints','Unfair Charges']
 
+  // Fetch count on mount if user already loaded from localStorage
+  useEffect(() => {
+    if (user?.id) fetchLetterCount(user.id)
+  }, [])
+
+  // Poll every 10 seconds for cross-device sync
+  useEffect(() => {
+    if (!user?.id) return
+    const interval = setInterval(() => {
+      fetchLetterCount(user.id)
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [user?.id])
+
   // Rule 1+2: Fetch count from API - single source of truth
   async function fetchLetterCount(userId) {
     const uid = userId || await getUserId()
